@@ -93,6 +93,9 @@ export default function SeriesDetail({ source = "korean" }) {
           src={episodeUrl(playingEp)}
           title={series.title}
           subtitle={`Episode ${String(playingEp.episode).padStart(2, "0")}${playingEp.finale ? " — Finale" : ""}`}
+          tmdbId={series.tmdbId}
+          seasonNum={activeSeason + 1}
+          episodeNum={playingEp.episode}
           onClose={() => setPlayingIdx(null)}
           onPrev={hasPrev ? () => setPlayingIdx(i => i - 1) : null}
           onNext={hasNext ? () => setPlayingIdx(i => i + 1) : null}

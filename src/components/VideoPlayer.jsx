@@ -10,6 +10,97 @@ function fmt(s) {
   return `${m}:${String(sec).padStart(2,"0")}`;
 }
 
+// ── OpenSubtitles.com v1 API (free key required) ─────────────
+const OS_API_KEY = "4RFVxXv80EapG22fz4E5gXXwEbT5YBMp";
+// legacy localStorage key kept for backwards compat but key is now hardcoded
+function loadOsKey() { return OS_API_KEY; }
+function saveOsKey() {}
+
+async function searchSubtitles({ query, tmdbId, season, episode, apiKey }) {
+  const params = new URLSearchParams({ per_page: 50, order_by: "download_count", order_direction: "desc" });
+  // TMDB ID gives exact match — use it when available, fall back to text query
+  if (tmdbId) {
+    params.set("tmdb_id", tmdbId);
+  } else {
+    params.set("query", query);
+  }
+  if (season)  params.set("season_number", season);
+  if (episode) params.set("episode_number", episode);
+  const res = await fetch(`https://api.opensubtitles.com/api/v1/subtitles?${params}`, {
+    headers: { "Api-Key": apiKey, "Content-Type": "application/json" },
+  });
+  if (res.status === 401 || res.status === 403) throw new Error("invalid_key");
+  if (!res.ok) throw new Error(`search ${res.status}`);
+  const json = await res.json();
+  return (json.data || [])
+    .map((item, i) => ({
+      id: item.attributes.files?.[0]?.file_id || String(i),
+      lang: (item.attributes.language || "en").toLowerCase(),
+      releaseName: item.attributes.release || item.attributes.feature_details?.title || query,
+      downloads: item.attributes.download_count || 0,
+      rating: item.attributes.ratings || 0,
+      fileId: item.attributes.files?.[0]?.file_id,
+      fileName: item.attributes.files?.[0]?.file_name || "subtitle.srt",
+      hearingImpaired: item.attributes.hearing_impaired || false,
+      fps: item.attributes.fps || null,
+    }))
+    .sort((a, b) => b.downloads - a.downloads);
+}
+
+async function fetchSubtitleText(fileId, apiKey) {
+  const res = await fetch("https://api.opensubtitles.com/api/v1/download", {
+    method: "POST",
+    headers: { "Api-Key": apiKey, "Content-Type": "application/json" },
+    body: JSON.stringify({ file_id: fileId }),
+  });
+  if (!res.ok) throw new Error(`download-link ${res.status}`);
+  const { link, file_name } = await res.json();
+  if (!link) throw new Error("no download link");
+  const fileRes = await fetch(link);
+  if (!fileRes.ok) throw new Error(`download ${fileRes.status}`);
+  return { text: await fileRes.text(), name: file_name || "subtitle.srt" };
+}
+
+// ── Subtitle cache (localStorage) ───────────────────────────
+const SUB_CACHE_KEY = "dhakaflix_sub_cache";
+const SUB_CACHE_MAX = 50;
+
+function loadSubCache() {
+  try { return JSON.parse(localStorage.getItem(SUB_CACHE_KEY) || "{}"); }
+  catch { return {}; }
+}
+function saveSubCache(cache) {
+  try { localStorage.setItem(SUB_CACHE_KEY, JSON.stringify(cache)); } catch {}
+}
+function getCachedSub(fileId) {
+  const cache = loadSubCache();
+  return cache[fileId] || null;
+}
+function setCachedSub(fileId, text, fileName) {
+  const cache = loadSubCache();
+  cache[fileId] = { text, fileName, savedAt: Date.now() };
+  // evict oldest entries if over limit
+  const keys = Object.keys(cache);
+  if (keys.length > SUB_CACHE_MAX) {
+    const sorted = keys.sort((a, b) => cache[a].savedAt - cache[b].savedAt);
+    sorted.slice(0, keys.length - SUB_CACHE_MAX).forEach(k => delete cache[k]);
+  }
+  saveSubCache(cache);
+}
+
+const LANG_NAMES = {
+  en: "English", ar: "Arabic", bn: "Bengali", zh: "Chinese", nl: "Dutch",
+  fr: "French", de: "German", hi: "Hindi", id: "Indonesian", it: "Italian",
+  ja: "Japanese", ko: "Korean", ms: "Malay", fa: "Persian", pt: "Portuguese",
+  ru: "Russian", es: "Spanish", tr: "Turkish", ur: "Urdu", vi: "Vietnamese",
+};
+const LANG_FLAGS = {
+  en: "🇬🇧", ar: "🇸🇦", bn: "🇧🇩", zh: "🇨🇳", nl: "🇳🇱",
+  fr: "🇫🇷", de: "🇩🇪", hi: "🇮🇳", id: "🇮🇩", it: "🇮🇹",
+  ja: "🇯🇵", ko: "🇰🇷", ms: "🇲🇾", fa: "🇮🇷", pt: "🇵🇹",
+  ru: "🇷🇺", es: "🇪🇸", tr: "🇹🇷", ur: "🇵🇰", vi: "🇻🇳",
+};
+
 // parse SRT → [{start, end, text}]
 function parseSRT(raw) {
   const blocks = raw.trim().split(/\n\s*\n/);
@@ -63,7 +154,7 @@ function persistVolume(v) {
 }
 
 // episodes: [{episode, filename, finale, url}]  optional — for episode panel
-export default function VideoPlayer({ src, title, subtitle, onClose, onNext, onPrev, episodes, currentEpIdx, onJumpTo }) {
+export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, episodeNum, onClose, onNext, onPrev, episodes, currentEpIdx, onJumpTo }) {
   const videoRef      = useRef(null);
   const wrapRef       = useRef(null);
   const hideTimer     = useRef(null);
@@ -96,6 +187,14 @@ export default function VideoPlayer({ src, title, subtitle, onClose, onNext, onP
   const [seekTooltip, setSeekTooltip] = useState(null); // {x, time}
   const [seekDrag,    setSeekDrag]    = useState(null); // ratio while dragging (visual only)
   const [cinematic,  setCinematic]  = useState(false);
+  const [showSubPanel, setShowSubPanel] = useState(false);
+  const [subResults,   setSubResults]   = useState([]);
+  const [subLoading,   setSubLoading]   = useState(false);
+  const [subError,     setSubError]     = useState("");
+  const [subDownloading, setSubDownloading] = useState(null);
+  const [subLangFilter,  setSubLangFilter]  = useState("en");
+  const [osKey,          setOsKey]          = useState(OS_API_KEY);
+  const [showKeyInput,   setShowKeyInput]   = useState(false); // unused with hardcoded key
 
   // ── auto-hide ───────────────────────────────────────────────
   const revealControls = useCallback(() => {
@@ -198,9 +297,10 @@ export default function VideoPlayer({ src, title, subtitle, onClose, onNext, onP
       if (!v || e.target.tagName === "INPUT") return;
       switch (e.key) {
         case "Escape":
-          if (showEps)    { setShowEps(false);   return; }
-          if (endOverlay) { setEndOverlay(false); return; }
-          if (showSpeed)  { setShowSpeed(false);  return; }
+          if (showSubPanel) { setShowSubPanel(false); return; }
+          if (showEps)      { setShowEps(false);   return; }
+          if (endOverlay)   { setEndOverlay(false); return; }
+          if (showSpeed)    { setShowSpeed(false);  return; }
           onClose(); break;
         case " ": case "k": case "K":
           e.preventDefault(); v.paused ? v.play() : v.pause(); break;
@@ -227,7 +327,7 @@ export default function VideoPlayer({ src, title, subtitle, onClose, onNext, onP
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose, onNext, revealControls, endOverlay, showSpeed, showEps]);
+  }, [onClose, onNext, revealControls, endOverlay, showSpeed, showEps, showSubPanel]);
 
   // ── video events ────────────────────────────────────────────
   function onTimeUpdate() {
@@ -409,11 +509,75 @@ export default function VideoPlayer({ src, title, subtitle, onClose, onNext, onP
     e.target.value = "";
   }
 
+  // ── online subtitle search ───────────────────────────────────
+  function openSubPanel() {
+    setShowSubPanel(true);
+    if (subResults.length === 0 && !subLoading) doSubSearch();
+  }
+  async function doSubSearch(keyOverride) {
+    const key = keyOverride ?? osKey;
+    if (!title && !tmdbId) return;
+    setSubLoading(true); setSubError(""); setSubResults([]);
+    try {
+      const results = await searchSubtitles({
+        query: title,
+        tmdbId: tmdbId || undefined,
+        season: seasonNum || undefined,
+        episode: episodeNum || undefined,
+        apiKey: key,
+      });
+      setSubResults(results);
+      if (results.length === 0) setSubError("No subtitles found for this title.");
+    } catch (err) {
+      setSubError("Search failed. Check your internet connection.");
+    } finally {
+      setSubLoading(false);
+    }
+  }
+  async function downloadSub(item) {
+    if (!item.fileId) { setSubError("No download link for this subtitle."); return; }
+    setSubError("");
+
+    // check cache first — no API call needed
+    const cached = getCachedSub(item.fileId);
+    if (cached) {
+      const lname = (cached.fileName || "").toLowerCase();
+      const parsed = lname.endsWith(".vtt") ? parseVTT(cached.text) : parseSRT(cached.text);
+      if (parsed.length) { setSubs(parsed); setShowSubPanel(false); return; }
+    }
+
+    setSubDownloading(item.id);
+    try {
+      const { text, name } = await fetchSubtitleText(item.fileId, osKey);
+      const lname = (name || "").toLowerCase();
+      const parsed = lname.endsWith(".vtt") ? parseVTT(text) : parseSRT(text);
+      if (!parsed.length) throw new Error("Could not parse subtitle");
+      setCachedSub(item.fileId, text, name); // save to cache
+      setSubs(parsed);
+      setShowSubPanel(false);
+    } catch {
+      setSubError("Download failed. Try another subtitle.");
+    } finally {
+      setSubDownloading(null);
+    }
+  }
+
   const pct     = seekDrag !== null ? seekDrag * 100 : duration ? (current / duration) * 100 : 0;
   const bufPct  = duration ? (buffered / duration) * 100 : 0;
   const volPct  = muted ? 0 : volume * 100;
-  const volIcon = muted || volume === 0 ? "🔇" : volume < 0.5 ? "🔉" : "🔊";
   const pipSupported = document.pictureInPictureEnabled;
+
+  // filtered subtitle results — sorted by downloads already
+  const subCache = loadSubCache();
+  const filteredSubs = (subLangFilter === "all" ? subResults : subResults.filter(r => r.lang === subLangFilter))
+    .map(r => ({ ...r, cached: !!subCache[r.fileId] }))
+    .sort((a, b) => (b.cached ? 1 : 0) - (a.cached ? 1 : 0) || b.downloads - a.downloads);
+  // langs sorted by total downloads descending so most useful come first
+  const subLangCounts = subResults.reduce((acc, r) => {
+    acc[r.lang] = (acc[r.lang] || 0) + 1;
+    return acc;
+  }, {});
+  const subLangs = Object.keys(subLangCounts).sort((a, b) => subLangCounts[b] - subLangCounts[a]);
 
   return (
     <>
@@ -441,7 +605,9 @@ export default function VideoPlayer({ src, title, subtitle, onClose, onNext, onP
               </div>
               <div className="vp-header-right">
                 {pip && <span className="vp-pip-badge">PiP</span>}
-                <button className="vp-close" onClick={onClose} aria-label="Close">✕</button>
+                <button className="vp-close" onClick={onClose} aria-label="Close">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
               </div>
             </div>
 
@@ -511,7 +677,9 @@ export default function VideoPlayer({ src, title, subtitle, onClose, onNext, onP
               <div className="vp-ep-panel" onClick={e => e.stopPropagation()}>
                 <div className="vp-ep-panel-header">
                   <span>Episodes</span>
-                  <button className="vp-ep-panel-close" onClick={() => setShowEps(false)}>✕</button>
+                  <button className="vp-ep-panel-close" onClick={() => setShowEps(false)}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
                 </div>
                 <div className="vp-ep-list">
                   {episodes.map((ep, idx) => (
@@ -525,6 +693,105 @@ export default function VideoPlayer({ src, title, subtitle, onClose, onNext, onP
                         Episode {ep.episode}{ep.finale ? " — Finale" : ""}
                       </span>
                       {idx === currentEpIdx && <span className="vp-ep-now">▶ Now</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── SUBTITLE PANEL ── */}
+            {showSubPanel && (
+              <div className="vp-sub-panel" onClick={e => e.stopPropagation()}>
+                <div className="vp-sub-panel-header">
+                  <span className="vp-sub-panel-title">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM4 12h4v2H4v-2zm10 6H4v-2h10v2zm6 0h-4v-2h4v2zm0-4H10v-2h10v2z"/></svg>
+                    Subtitles
+                  </span>
+                  <div className="vp-sub-panel-actions">
+                    <label className="vp-sub-upload-btn" title="Upload subtitle file">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                      Upload file
+                      <input ref={subRef} type="file" accept=".srt,.vtt" onChange={e => { onSubFile(e); setShowSubPanel(false); }} style={{ display: "none" }} />
+                    </label>
+                    {subs.length > 0 && (
+                      <button className="vp-sub-clear-btn" onClick={() => { setSubs([]); setSubLine(""); }} title="Clear subtitle">
+                        Clear
+                      </button>
+                    )}
+                    <button className="vp-ep-panel-close" onClick={() => setShowSubPanel(false)}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                  </div>
+                </div>
+
+                {/* lang filter */}
+                {subLangs.length > 0 && (
+                  <div className="vp-sub-lang-bar">
+                    <button
+                      className={`vp-sub-lang-btn${subLangFilter === "all" ? " active" : ""}`}
+                      onClick={() => setSubLangFilter("all")}
+                    >All <span className="vp-sub-lang-count">{subResults.length}</span></button>
+                    {subLangs.map(l => (
+                      <button
+                        key={l}
+                        className={`vp-sub-lang-btn${subLangFilter === l ? " active" : ""}`}
+                        onClick={() => setSubLangFilter(l)}
+                      >
+                        {LANG_FLAGS[l] || "🌐"} {LANG_NAMES[l] || l.toUpperCase()}
+                        <span className="vp-sub-lang-count">{subLangCounts[l]}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <div className="vp-sub-list">
+                  {subLoading && (
+                    <div className="vp-sub-state">
+                      <div className="vp-spin-ring" style={{ width: 28, height: 28 }} />
+                      <span>Searching subtitles…</span>
+                    </div>
+                  )}
+                  {!subLoading && subError && (
+                    <div className="vp-sub-state vp-sub-error">
+                      <span>{subError}</span>
+                      <button className="vp-sub-retry" onClick={() => doSubSearch()}>Retry</button>
+                    </div>
+                  )}
+                  {!subLoading && !subError && filteredSubs.length === 0 && subResults.length > 0 && (
+                    <div className="vp-sub-state">
+                      No {LANG_NAMES[subLangFilter] || subLangFilter} subtitles found.
+                      <button className="vp-sub-retry" onClick={() => setSubLangFilter("all")}>Show all languages</button>
+                    </div>
+                  )}
+                  {filteredSubs.map(item => (
+                    <button
+                      key={item.id}
+                      className={`vp-sub-item${subDownloading === item.id ? " loading" : ""}${item.cached ? " cached" : ""}`}
+                      onClick={() => downloadSub(item)}
+                      disabled={subDownloading !== null}
+                      title={item.cached ? "Cached — applies instantly" : "Click to download & apply"}
+                    >
+                      <span className="vp-sub-flag">{LANG_FLAGS[item.lang] || "🌐"}</span>
+                      <div className="vp-sub-info">
+                        <span className="vp-sub-name">
+                          {item.releaseName}
+                          {item.cached && <span className="vp-sub-cached-badge">⚡ cached</span>}
+                        </span>
+                        <span className="vp-sub-meta">
+                          {LANG_NAMES[item.lang] || item.lang.toUpperCase()}
+                          {item.hearingImpaired ? " · HI" : ""}
+                          {item.fps ? ` · ${item.fps} fps` : ""}
+                          {item.downloads > 0 ? ` · ↓ ${item.downloads.toLocaleString()}` : ""}
+                        </span>
+                      </div>
+                      <span className="vp-sub-dl">
+                        {subDownloading === item.id
+                          ? <span className="vp-sub-spin" />
+                          : item.cached
+                          ? <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
+                          : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        }
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -558,15 +825,37 @@ export default function VideoPlayer({ src, title, subtitle, onClose, onNext, onP
                 {/* bottom bar */}
                 <div className="vp-bar">
                   <div className="vp-bar-left">
-                    {onPrev && <button className="vp-btn" onClick={onPrev} title="Previous episode">⏮</button>}
-                    <button className="vp-btn" onClick={() => skip(-10)} title="Rewind 10s (←)">⏪</button>
-                    <button className="vp-btn vp-btn-play" onClick={togglePlay} title="Play / Pause (Space)">
-                      {playing ? "⏸" : "▶"}
+                    {onPrev && (
+                      <button className="vp-btn" onClick={onPrev} title="Previous episode">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+                      </button>
+                    )}
+                    <button className="vp-btn" onClick={() => skip(-10)} title="Rewind 10s (←)">
+                      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/><text x="7" y="15" fontSize="5" fontWeight="bold" fill="currentColor">10</text></svg>
                     </button>
-                    <button className="vp-btn" onClick={() => skip(10)} title="Forward 10s (→)">⏩</button>
-                    {onNext && <button className="vp-btn" onClick={onNext} title="Next episode (N)">⏭</button>}
+                    <button className="vp-btn vp-btn-play" onClick={togglePlay} title="Play / Pause (Space)">
+                      {playing
+                        ? <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                        : <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                      }
+                    </button>
+                    <button className="vp-btn" onClick={() => skip(10)} title="Forward 10s (→)">
+                      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/><text x="7" y="15" fontSize="5" fontWeight="bold" fill="currentColor">10</text></svg>
+                    </button>
+                    {onNext && (
+                      <button className="vp-btn" onClick={onNext} title="Next episode (N)">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zm2-8.14L11.03 12 8 14.14V9.86zM16 6h2v12h-2z"/></svg>
+                      </button>
+                    )}
 
-                    <button className="vp-btn" onClick={toggleMute} title="Mute (M)">{volIcon}</button>
+                    <button className="vp-btn" onClick={toggleMute} title="Mute (M)">
+                      {muted || volume === 0
+                        ? <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 12A4.5 4.5 0 0 0 14 7.97v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51A8.796 8.796 0 0 0 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3 3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06A8.99 8.99 0 0 0 17.73 18l2 2.03L21 18.76 5.24 3 4.27 3zM12 4 9.91 6.09 12 8.18V4z"/></svg>
+                        : volume < 0.5
+                        ? <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.5 12A4.5 4.5 0 0 0 16 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM5 9v6h4l5 5V4L9 9H5z"/></svg>
+                        : <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                      }
+                    </button>
                     <div ref={volRef} className="vp-vol-track" onMouseDown={onVolMouseDown} title="Volume">
                       <div className="vp-vol-fill"  style={{ width: `${volPct}%` }} />
                       <div className="vp-vol-thumb" style={{ left:  `${volPct}%` }} />
@@ -576,40 +865,40 @@ export default function VideoPlayer({ src, title, subtitle, onClose, onNext, onP
                   </div>
 
                   <div className="vp-bar-right">
-                    {/* episode list panel toggle */}
                     {episodes && (
                       <button
                         className={`vp-btn vp-btn-eps${showEps ? " active" : ""}`}
                         onClick={e => { e.stopPropagation(); setShowEps(v => !v); }}
                         title="Episodes (E)"
                       >
-                        ☰
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
                       </button>
                     )}
 
-                    {/* subtitle picker */}
-                    <label className="vp-btn vp-btn-cc" title="Load subtitle file (.srt / .vtt)">
-                      {subs.length ? "CC●" : "CC"}
-                      <input ref={subRef} type="file" accept=".srt,.vtt" onChange={onSubFile} style={{ display: "none" }} />
-                    </label>
+                    <button
+                      className={`vp-btn vp-btn-cc${showSubPanel ? " active" : ""}`}
+                      onClick={e => { e.stopPropagation(); openSubPanel(); }}
+                      title="Subtitles"
+                    >
+                      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM4 12h4v2H4v-2zm10 6H4v-2h10v2zm6 0h-4v-2h4v2zm0-4H10v-2h10v2z"/></svg>
+                      {subs.length > 0 && <span className="vp-cc-dot" />}
+                    </button>
 
-                    {/* cinematic mode */}
                     <button
                       className={`vp-btn vp-btn-cinema${cinematic ? " active" : ""}`}
                       onClick={e => { e.stopPropagation(); setCinematic(v => !v); }}
                       title="Cinematic mode (C)"
                     >
-                      🎬
+                      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 3v2h-2V3H8v2H6V3H4v18h2v-2h2v2h8v-2h2v2h2V3h-2zM8 17H6v-2h2v2zm0-4H6v-2h2v2zm0-4H6V7h2v2zm10 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2z"/></svg>
                     </button>
 
-                    {/* PiP */}
                     {pipSupported && (
                       <button
                         className={`vp-btn${pip ? " active" : ""}`}
                         onClick={e => { e.stopPropagation(); togglePip(); }}
                         title="Picture in Picture (P)"
                       >
-                        ⧉
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 11h-8v6h8v-6zm4 8V4.98C23 3.88 22.1 3 21 3H3c-1.1 0-2 .88-2 1.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H3V4.97h18v14.05z"/></svg>
                       </button>
                     )}
 
