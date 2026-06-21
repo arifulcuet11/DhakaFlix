@@ -7,6 +7,7 @@ import { categories } from "../data/content";
 import { useKoreanSeries } from "../hooks/useKoreanSeries";
 import { useEnglishTV } from "../hooks/useEnglishTV";
 import { useForeignMovies } from "../hooks/useForeignMovies";
+import { useAnimationMovies } from "../hooks/useAnimationMovies";
 import "./Page.css";
 import "./Home.css";
 
@@ -16,6 +17,8 @@ export default function Home() {
   const { series: koreanSeries, loading } = useKoreanSeries();
   const { series: englishSeries } = useEnglishTV();
   const { movies: foreignMovies } = useForeignMovies();
+  const { movies: animationMovies } = useAnimationMovies();
+  const [playingAnimation, setPlayingAnimation] = useState(null);
   const [activeGenre, setActiveGenre] = useState("All");
   const [playingMovie, setPlayingMovie] = useState(null);
 
@@ -65,6 +68,14 @@ export default function Home() {
           title={playingMovie.title}
           subtitle={`${playingMovie.language}${playingMovie.year ? ` · ${playingMovie.year}` : ""}`}
           onClose={() => setPlayingMovie(null)}
+        />
+      )}
+      {playingAnimation && (
+        <VideoPlayer
+          src={playingAnimation.fileUrl}
+          title={playingAnimation.title}
+          subtitle={playingAnimation.year ? `Animation · ${playingAnimation.year}` : "Animation"}
+          onClose={() => setPlayingAnimation(null)}
         />
       )}
       <Hero />
@@ -159,6 +170,27 @@ export default function Home() {
                 onPlay: () => setPlayingMovie(m),
               }))}
             seeAllUrl="/foreign-movies"
+          />
+        )}
+
+        <div className="home-divider" />
+
+        {/* ── ANIMATION MOVIES highlights ── */}
+        {animationMovies.length > 0 && (
+          <CategoryRow
+            title="Animation Movies"
+            items={animationMovies
+              .filter(m => m.rating && m.voteCount > 50)
+              .sort((a, b) => b.rating - a.rating)
+              .slice(0, 20)
+              .map(m => ({
+                title: m.title,
+                tag: `${m.year} · ${m.quality}`,
+                poster: m.tmdbPoster || m.poster,
+                rating: m.rating,
+                onPlay: () => setPlayingAnimation(m),
+              }))}
+            seeAllUrl="/animation-movies"
           />
         )}
 

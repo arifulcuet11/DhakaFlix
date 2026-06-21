@@ -9,6 +9,7 @@ import SeriesDetail from "./pages/SeriesDetail";
 import EnglishTV from "./pages/EnglishTV";
 import KoreanTV from "./pages/KoreanTV";
 import ForeignMovies from "./pages/ForeignMovies";
+import AnimationMovies from "./pages/AnimationMovies";
 
 export default function App() {
   const [query, setQuery] = useState("");
@@ -25,6 +26,7 @@ export default function App() {
         <Route path="/tvseries" element={<EnglishTV />} />
         <Route path="/korean" element={<KoreanTV />} />
         <Route path="/foreign-movies" element={<ForeignMovies />} />
+        <Route path="/animation-movies" element={<AnimationMovies />} />
       </Routes>
       <Footer />
     </BrowserRouter>
