@@ -9,6 +9,7 @@ import { useForeignMovies } from "../hooks/useForeignMovies";
 import { useAnimationMovies } from "../hooks/useAnimationMovies";
 import { useEnglishMovies } from "../hooks/useEnglishMovies";
 import { useSouthMovies } from "../hooks/useSouthMovies";
+import { useDocumentary } from "../hooks/useDocumentary";
 import { useContinueWatching } from "../hooks/useContinueWatching";
 import "./Page.css";
 import "./Home.css";
@@ -22,7 +23,9 @@ export default function Home() {
   const { movies: animationMovies } = useAnimationMovies();
   const { movies: englishMovies } = useEnglishMovies();
   const { movies: southMovies } = useSouthMovies();
+  const { movies: documentaries } = useDocumentary();
   const [playingAnimation, setPlayingAnimation] = useState(null);
+  const [playingDoc, setPlayingDoc] = useState(null);
   const [playingEnglish, setPlayingEnglish] = useState(null);
   const [playingSouth, setPlayingSouth] = useState(null);
   const [activeGenre, setActiveGenre] = useState("All");
@@ -103,6 +106,15 @@ export default function Home() {
           subtitle={playingEnglish.year ? `${playingEnglish.year} · ${playingEnglish.quality}` : playingEnglish.quality}
           tmdbId={playingEnglish.tmdbId}
           onClose={() => setPlayingEnglish(null)}
+        />
+      )}
+      {playingDoc && (
+        <VideoPlayer
+          src={playingDoc.fileUrl}
+          title={playingDoc.title}
+          subtitle={playingDoc.year ? `Documentary · ${playingDoc.year}` : "Documentary"}
+          tmdbId={playingDoc.tmdbId}
+          onClose={() => setPlayingDoc(null)}
         />
       )}
       {continuePlayingUrl && (
@@ -333,6 +345,26 @@ export default function Home() {
           />
         )}
 
+        <div className="home-divider" />
+
+        {/* ── DOCUMENTARY highlights ── */}
+        {documentaries.length > 0 && (
+          <CategoryRow
+            title="Documentary"
+            items={documentaries
+              .filter(m => m.rating && m.voteCount > 50)
+              .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+              .slice(0, 20)
+              .map(m => ({
+                title: m.title,
+                tag: `${m.year} · ${m.quality}`,
+                poster: m.tmdbPoster || m.poster,
+                rating: m.rating,
+                onPlay: () => setPlayingDoc(m),
+              }))}
+            seeAllUrl="/documentary"
+          />
+        )}
 
       </div>
     </div>

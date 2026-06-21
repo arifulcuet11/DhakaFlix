@@ -34,9 +34,10 @@ export default function Navbar({ onSearch }) {
           <li><Link to="/korean" className={navClass("/korean")}>Korean</Link></li>
           <li><Link to="/tvseries" className={navClass("/tvseries")}>TV Series</Link></li>
           <li><Link to="/english-movies" className={navClass("/english-movies")}>English</Link></li>
-          <li><Link to="/south-movies" className={navClass("/south-movies")}>South</Link></li>
+          <li><Link to="/south-movies" className={navClass("/south-movies")}>Hindi</Link></li>
           <li><Link to="/foreign-movies" className={navClass("/foreign-movies")}>Foreign</Link></li>
           <li><Link to="/animation-movies" className={navClass("/animation-movies")}>Animation</Link></li>
+          <li><Link to="/documentary" className={navClass("/documentary")}>Docs</Link></li>
         </ul>
 
         <div className="navbar-search">
