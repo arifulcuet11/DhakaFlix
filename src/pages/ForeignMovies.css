@@ -1,0 +1,50 @@
+.fm-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.92);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fm-modal-inner {
+  position: relative;
+  width: min(960px, 95vw);
+  background: #0D0F18;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.fm-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+  background: rgba(0,0,0,0.6);
+  border: none;
+  color: #fff;
+  font-size: 18px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fm-modal-close:hover { background: rgba(232,160,32,0.3); }
+
+.fm-video {
+  width: 100%;
+  display: block;
+  max-height: 70vh;
+  background: #000;
+}
+
+.fm-modal-title {
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(232,230,240,0.8);
+}

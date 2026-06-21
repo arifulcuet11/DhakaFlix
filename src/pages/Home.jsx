@@ -5,6 +5,7 @@ import CategoryRow from "../components/CategoryRow";
 import { categories } from "../data/content";
 import { useKoreanSeries } from "../hooks/useKoreanSeries";
 import { useEnglishTV } from "../hooks/useEnglishTV";
+import { useForeignMovies } from "../hooks/useForeignMovies";
 import "./Page.css";
 import "./Home.css";
 
@@ -13,6 +14,7 @@ const GENRES = ["All", "Drama", "Comedy", "Mystery", "Crime", "Action", "Sci-Fi 
 export default function Home() {
   const { series: koreanSeries, loading } = useKoreanSeries();
   const { series: englishSeries } = useEnglishTV();
+  const { movies: foreignMovies } = useForeignMovies();
   const [activeGenre, setActiveGenre] = useState("All");
 
   const filteredKorean = useMemo(() => {
@@ -126,6 +128,28 @@ export default function Home() {
               }))}
             seeAllUrl="/tvseries"
             tvRoute
+          />
+        )}
+
+        <div className="home-divider" />
+
+        {/* ── FOREIGN MOVIES highlights ── */}
+        {foreignMovies.length > 0 && (
+          <CategoryRow
+            title="Foreign Language Movies"
+            items={foreignMovies
+              .filter(m => m.rating && m.voteCount > 50)
+              .sort((a, b) => b.rating - a.rating)
+              .slice(0, 20)
+              .map(m => ({
+                title: m.title,
+                tag: `${m.language} · ${m.year}`,
+                poster: m.tmdbPoster || m.poster,
+                seriesId: m.id,
+                rating: m.rating,
+                href: "/foreign-movies",
+              }))}
+            seeAllUrl="/foreign-movies"
           />
         )}
 

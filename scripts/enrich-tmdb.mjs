@@ -35,6 +35,7 @@ const IN_FILE      = fileIdx !== -1
   : resolve(__dir, "../public/korean-series.json");
 const FORCE        = args.includes("--force");
 const RETRY_FAILED = args.includes("--retry-failed");
+const TYPE         = args.includes("--type") ? args[args.indexOf("--type") + 1] : "tv"; // "tv" or "movie"
 
 if (!TMDB_KEY) {
   console.error(
@@ -94,8 +95,9 @@ function cleanTitle(raw) {
 
 // ── TMDB search ───────────────────────────────────────────────
 async function tmdbSearch(title, year) {
-  const q   = encodeURIComponent(title);
-  const url = `${TMDB_BASE}/search/tv?api_key=${TMDB_KEY}&query=${q}&first_air_date_year=${year}&language=en-US`;
+  const q = encodeURIComponent(title);
+  const yearParam = TYPE === "movie" ? `primary_release_year=${year}` : `first_air_date_year=${year}`;
+  const url = `${TMDB_BASE}/search/${TYPE}?api_key=${TMDB_KEY}&query=${q}&${yearParam}&language=en-US`;
   const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error(`TMDB HTTP ${res.status}`);
   const data = await res.json();
@@ -104,7 +106,7 @@ async function tmdbSearch(title, year) {
 
 async function tmdbSearchNoYear(title) {
   const q   = encodeURIComponent(title);
-  const url = `${TMDB_BASE}/search/tv?api_key=${TMDB_KEY}&query=${q}&language=en-US`;
+  const url = `${TMDB_BASE}/search/${TYPE}?api_key=${TMDB_KEY}&query=${q}&language=en-US`;
   const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error(`TMDB HTTP ${res.status}`);
   const data = await res.json();
@@ -120,8 +122,8 @@ function pickBest(results, title, year) {
 
   // score each result
   const scored = results.map(r => {
-    const name   = normalise(r.name || "");
-    const orig   = normalise(r.original_name || "");
+    const name   = normalise(r.name || r.title || "");
+    const orig   = normalise(r.original_name || r.original_title || "");
     let score    = 0;
 
     if (name === target || orig === target) score += 100;
@@ -129,7 +131,7 @@ function pickBest(results, title, year) {
     else if (orig.includes(target) || target.includes(orig)) score += 40;
 
     // year bonus
-    const airYear = (r.first_air_date || "").slice(0, 4);
+    const airYear = (r.first_air_date || r.release_date || "").slice(0, 4);
     if (year && airYear === String(year)) score += 30;
     else if (year && Math.abs(Number(airYear) - Number(year)) === 1) score += 10;
 
@@ -168,7 +170,7 @@ async function enrich(series) {
 
   // deduplicate and cap at 4 genres
   const uniqueGenres = [...new Set(genres)].slice(0, 4);
-  if (!uniqueGenres.length) uniqueGenres.push("Drama");
+  if (!uniqueGenres.length) uniqueGenres.push(TYPE === "movie" ? "Drama" : "Drama");
 
   return {
     ...series,

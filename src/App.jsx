@@ -8,6 +8,7 @@ import Search from "./pages/Search";
 import SeriesDetail from "./pages/SeriesDetail";
 import EnglishTV from "./pages/EnglishTV";
 import KoreanTV from "./pages/KoreanTV";
+import ForeignMovies from "./pages/ForeignMovies";
 
 export default function App() {
   const [query, setQuery] = useState("");
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/tv/:id" element={<SeriesDetail source="english" />} />
         <Route path="/tvseries" element={<EnglishTV />} />
         <Route path="/korean" element={<KoreanTV />} />
+        <Route path="/foreign-movies" element={<ForeignMovies />} />
       </Routes>
       <Footer />
     </BrowserRouter>
