@@ -3,11 +3,11 @@ import { Link } from "react-router-dom";
 import Hero from "../components/Hero";
 import CategoryRow from "../components/CategoryRow";
 import VideoPlayer from "../components/VideoPlayer";
-import { categories } from "../data/content";
 import { useKoreanSeries } from "../hooks/useKoreanSeries";
 import { useEnglishTV } from "../hooks/useEnglishTV";
 import { useForeignMovies } from "../hooks/useForeignMovies";
 import { useAnimationMovies } from "../hooks/useAnimationMovies";
+import { useEnglishMovies } from "../hooks/useEnglishMovies";
 import { useContinueWatching } from "../hooks/useContinueWatching";
 import "./Page.css";
 import "./Home.css";
@@ -19,7 +19,9 @@ export default function Home() {
   const { series: englishSeries } = useEnglishTV();
   const { movies: foreignMovies } = useForeignMovies();
   const { movies: animationMovies } = useAnimationMovies();
+  const { movies: englishMovies } = useEnglishMovies();
   const [playingAnimation, setPlayingAnimation] = useState(null);
+  const [playingEnglish, setPlayingEnglish] = useState(null);
   const [activeGenre, setActiveGenre] = useState("All");
   const [playingMovie, setPlayingMovie] = useState(null);
   const [continuePlayingUrl, setContinuePlayingUrl] = useState(null);
@@ -80,6 +82,15 @@ export default function Home() {
           title={playingAnimation.title}
           subtitle={playingAnimation.year ? `Animation · ${playingAnimation.year}` : "Animation"}
           onClose={() => setPlayingAnimation(null)}
+        />
+      )}
+      {playingEnglish && (
+        <VideoPlayer
+          src={playingEnglish.fileUrl}
+          title={playingEnglish.title}
+          subtitle={playingEnglish.year ? `${playingEnglish.year} · ${playingEnglish.quality}` : playingEnglish.quality}
+          tmdbId={playingEnglish.tmdbId}
+          onClose={() => setPlayingEnglish(null)}
         />
       )}
       {continuePlayingUrl && (
@@ -186,6 +197,48 @@ export default function Home() {
 
         <div className="home-divider" />
 
+        {/* ── IMDB TOP 250 highlights ── */}
+        {englishMovies.length > 0 && (
+          <CategoryRow
+            title="IMDb Top 250"
+            items={englishMovies
+              .filter(m => m.source === "IMDb Top 250" && m.rating)
+              .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+              .slice(0, 20)
+              .map(m => ({
+                title: m.title,
+                tag: `${m.year} · ${m.quality}`,
+                poster: m.tmdbPoster || m.poster,
+                rating: m.rating,
+                onPlay: () => setPlayingEnglish(m),
+              }))}
+            seeAllUrl="/english-movies?source=IMDb+Top+250"
+          />
+        )}
+
+        <div className="home-divider" />
+
+        {/* ── ENGLISH MOVIES highlights ── */}
+        {englishMovies.length > 0 && (
+          <CategoryRow
+            title="English Movies"
+            items={englishMovies
+              .filter(m => m.rating && m.voteCount > 100)
+              .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+              .slice(0, 20)
+              .map(m => ({
+                title: m.title,
+                tag: `${m.year} · ${m.quality}`,
+                poster: m.tmdbPoster || m.poster,
+                rating: m.rating,
+                onPlay: () => setPlayingEnglish(m),
+              }))}
+            seeAllUrl="/english-movies"
+          />
+        )}
+
+        <div className="home-divider" />
+
         {/* ── FOREIGN MOVIES highlights ── */}
         {foreignMovies.length > 0 && (
           <CategoryRow
@@ -226,11 +279,6 @@ export default function Home() {
           />
         )}
 
-        <div className="home-divider" />
-
-        <CategoryRow title="Movies" items={categories.movies.items} />
-        <CategoryRow title="Games" items={categories.games.items} />
-        <CategoryRow title="Software & Tutorials" items={categories.software.items} />
 
       </div>
     </div>

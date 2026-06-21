@@ -200,6 +200,20 @@
   z-index: 1;
 }
 
+.sg-badge-imdb {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 2px;
+  background: #F5C518;
+  color: #000;
+  z-index: 1;
+  letter-spacing: 0.3px;
+}
+
 .sg-card-overlay {
   position: absolute;
   inset: 0;
