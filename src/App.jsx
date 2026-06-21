@@ -12,6 +12,7 @@ import KoreanTV from "./pages/KoreanTV";
 import ForeignMovies from "./pages/ForeignMovies";
 import AnimationMovies from "./pages/AnimationMovies";
 import EnglishMovies from "./pages/EnglishMovies";
+import SouthMovies from "./pages/SouthMovies";
 
 export default function App() {
   const [query, setQuery] = useState("");
@@ -30,6 +31,7 @@ export default function App() {
         <Route path="/foreign-movies" element={<ForeignMovies />} />
         <Route path="/animation-movies" element={<AnimationMovies />} />
         <Route path="/english-movies" element={<EnglishMovies />} />
+        <Route path="/south-movies" element={<SouthMovies />} />
       </Routes>
       <Footer />
       <BottomNav />

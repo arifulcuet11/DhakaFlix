@@ -8,6 +8,7 @@ import { useEnglishTV } from "../hooks/useEnglishTV";
 import { useForeignMovies } from "../hooks/useForeignMovies";
 import { useAnimationMovies } from "../hooks/useAnimationMovies";
 import { useEnglishMovies } from "../hooks/useEnglishMovies";
+import { useSouthMovies } from "../hooks/useSouthMovies";
 import { useContinueWatching } from "../hooks/useContinueWatching";
 import "./Page.css";
 import "./Home.css";
@@ -20,8 +21,10 @@ export default function Home() {
   const { movies: foreignMovies } = useForeignMovies();
   const { movies: animationMovies } = useAnimationMovies();
   const { movies: englishMovies } = useEnglishMovies();
+  const { movies: southMovies } = useSouthMovies();
   const [playingAnimation, setPlayingAnimation] = useState(null);
   const [playingEnglish, setPlayingEnglish] = useState(null);
+  const [playingSouth, setPlayingSouth] = useState(null);
   const [activeGenre, setActiveGenre] = useState("All");
   const [playingMovie, setPlayingMovie] = useState(null);
   const [continuePlayingUrl, setContinuePlayingUrl] = useState(null);
@@ -82,6 +85,15 @@ export default function Home() {
           title={playingAnimation.title}
           subtitle={playingAnimation.year ? `Animation · ${playingAnimation.year}` : "Animation"}
           onClose={() => setPlayingAnimation(null)}
+        />
+      )}
+      {playingSouth && (
+        <VideoPlayer
+          src={playingSouth.fileUrl}
+          title={playingSouth.title}
+          subtitle={playingSouth.year ? `${playingSouth.source} · ${playingSouth.year}` : playingSouth.source}
+          tmdbId={playingSouth.tmdbId}
+          onClose={() => setPlayingSouth(null)}
         />
       )}
       {playingEnglish && (
@@ -234,6 +246,48 @@ export default function Home() {
                 onPlay: () => setPlayingEnglish(m),
               }))}
             seeAllUrl="/english-movies"
+          />
+        )}
+
+        <div className="home-divider" />
+
+        {/* ── HINDI MOVIES highlights ── */}
+        {southMovies.length > 0 && (
+          <CategoryRow
+            title="Hindi Movies"
+            items={southMovies
+              .filter(m => m.source === "Hindi Movies" && m.rating)
+              .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+              .slice(0, 20)
+              .map(m => ({
+                title: m.title,
+                tag: `${m.year} · ${m.quality}`,
+                poster: m.tmdbPoster || m.poster,
+                rating: m.rating,
+                onPlay: () => setPlayingSouth(m),
+              }))}
+            seeAllUrl="/south-movies?source=Hindi+Movies"
+          />
+        )}
+
+        <div className="home-divider" />
+
+        {/* ── SOUTH INDIAN MOVIES highlights ── */}
+        {southMovies.length > 0 && (
+          <CategoryRow
+            title="South Indian Movies"
+            items={southMovies
+              .filter(m => m.source !== "Hindi Movies" && m.rating)
+              .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+              .slice(0, 20)
+              .map(m => ({
+                title: m.title,
+                tag: `${m.year} · ${m.quality}`,
+                poster: m.tmdbPoster || m.poster,
+                rating: m.rating,
+                onPlay: () => setPlayingSouth(m),
+              }))}
+            seeAllUrl="/south-movies"
           />
         )}
 
