@@ -75,6 +75,7 @@ export default function VideoPlayer({ src, title, subtitle, onClose, onNext, onP
   const [subs,       setSubs]       = useState([]);     // parsed subtitle cues
   const [subLine,    setSubLine]    = useState("");     // current subtitle text
   const [seekTooltip, setSeekTooltip] = useState(null); // {x, time}
+  const [seekDrag,    setSeekDrag]    = useState(null); // ratio while dragging (visual only)
   const [cinematic,  setCinematic]  = useState(false);
 
   // ── auto-hide ───────────────────────────────────────────────
@@ -243,11 +244,27 @@ export default function VideoPlayer({ src, title, subtitle, onClose, onNext, onP
     setSeekTooltip({ x: e.clientX - rect.left, time: ratio * duration });
   }
   function onSeekMouseDown(e) {
-    seek(e);
-    const onMove = ev => { seek(ev); onSeekMouseMove(ev); };
-    const onUp   = ()  => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+    e.preventDefault();
+    const ratio = getSeekRatio(e);
+    setSeekDrag(ratio);
+    setSeekTooltip({ x: e.clientX - seekRef.current.getBoundingClientRect().left, time: ratio * duration });
+
+    const onMove = ev => {
+      const r = getSeekRatio(ev);
+      setSeekDrag(r);
+      const bar = seekRef.current;
+      if (bar) setSeekTooltip({ x: ev.clientX - bar.getBoundingClientRect().left, time: r * duration });
+    };
+    const onUp = ev => {
+      const v = videoRef.current;
+      if (v && v.duration) v.currentTime = getSeekRatio(ev) * v.duration;
+      setSeekDrag(null);
+      setSeekTooltip(null);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
     window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup",  onUp);
+    window.addEventListener("mouseup", onUp);
   }
 
   // ── volume ──────────────────────────────────────────────────
@@ -343,7 +360,7 @@ export default function VideoPlayer({ src, title, subtitle, onClose, onNext, onP
     e.target.value = "";
   }
 
-  const pct     = duration ? (current  / duration) * 100 : 0;
+  const pct     = seekDrag !== null ? seekDrag * 100 : duration ? (current / duration) * 100 : 0;
   const bufPct  = duration ? (buffered / duration) * 100 : 0;
   const volPct  = muted ? 0 : volume * 100;
   const volIcon = muted || volume === 0 ? "🔇" : volume < 0.5 ? "🔉" : "🔊";
