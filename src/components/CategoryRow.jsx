@@ -66,6 +66,19 @@ export default function CategoryRow({ title, items, seeAllUrl, tvRoute }) {
             </>
           );
 
+          if (item.onPlay) {
+            return (
+              <div
+                key={i}
+                className="card"
+                style={{ "--accent": "#E8A020", cursor: "pointer" }}
+                onClick={item.onPlay}
+              >
+                {inner}
+              </div>
+            );
+          }
+
           if (item.seriesId) {
             const route = (tvRoute || item.tvRoute)
               ? `/tv/${item.seriesId}`

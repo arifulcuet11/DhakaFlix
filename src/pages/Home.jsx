@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Hero from "../components/Hero";
 import CategoryRow from "../components/CategoryRow";
+import VideoPlayer from "../components/VideoPlayer";
 import { categories } from "../data/content";
 import { useKoreanSeries } from "../hooks/useKoreanSeries";
 import { useEnglishTV } from "../hooks/useEnglishTV";
@@ -16,6 +17,7 @@ export default function Home() {
   const { series: englishSeries } = useEnglishTV();
   const { movies: foreignMovies } = useForeignMovies();
   const [activeGenre, setActiveGenre] = useState("All");
+  const [playingMovie, setPlayingMovie] = useState(null);
 
   const filteredKorean = useMemo(() => {
     if (activeGenre === "All") return koreanSeries;
@@ -57,6 +59,14 @@ export default function Home() {
 
   return (
     <div className="home">
+      {playingMovie && (
+        <VideoPlayer
+          src={playingMovie.fileUrl}
+          title={playingMovie.title}
+          subtitle={`${playingMovie.language}${playingMovie.year ? ` · ${playingMovie.year}` : ""}`}
+          onClose={() => setPlayingMovie(null)}
+        />
+      )}
       <Hero />
 
       <div className="home-content">
@@ -145,9 +155,8 @@ export default function Home() {
                 title: m.title,
                 tag: `${m.language} · ${m.year}`,
                 poster: m.tmdbPoster || m.poster,
-                seriesId: m.id,
                 rating: m.rating,
-                href: "/foreign-movies",
+                onPlay: () => setPlayingMovie(m),
               }))}
             seeAllUrl="/foreign-movies"
           />
