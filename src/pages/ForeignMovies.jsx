@@ -1,8 +1,8 @@
 import { useMemo, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useForeignMovies } from "../hooks/useForeignMovies";
+import VideoPlayer from "../components/VideoPlayer";
 import "../components/SeriesGrid.css";
-import "./ForeignMovies.css";
 
 const SORT_OPTIONS = [
   { value: "rating", label: "Top Rated" },
@@ -53,21 +53,14 @@ export default function ForeignMovies() {
 
   return (
     <div className="sg-root">
-      {/* video modal */}
+      {/* video player */}
       {playing && (
-        <div className="fm-modal" onClick={() => setPlaying(null)}>
-          <div className="fm-modal-inner" onClick={e => e.stopPropagation()}>
-            <button className="fm-modal-close" onClick={() => setPlaying(null)}>✕</button>
-            <video
-              src={playing.fileUrl}
-              controls
-              autoPlay
-              playsInline
-              className="fm-video"
-            />
-            <div className="fm-modal-title">{playing.title} {playing.year && `(${playing.year})`}</div>
-          </div>
-        </div>
+        <VideoPlayer
+          src={playing.fileUrl}
+          title={playing.title}
+          subtitle={`${playing.language}${playing.year ? ` · ${playing.year}` : ""}`}
+          onClose={() => setPlaying(null)}
+        />
       )}
 
       <div className="sg-header">
