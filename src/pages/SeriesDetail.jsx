@@ -129,7 +129,7 @@ export default function SeriesDetail({ source = "korean" }) {
 
       {/* ── SCROLLABLE RIGHT PANEL ── */}
       <main className="sd-panel-right">
-        <SeriesBanner series={series} totalEpisodes={totalEpisodes} videoPlaying={playingIdx !== null} />
+        <SeriesBanner series={series} totalEpisodes={totalEpisodes} />
 
         <div className="sd-content">
 
