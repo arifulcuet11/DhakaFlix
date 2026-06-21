@@ -10,6 +10,7 @@ import { useAnimationMovies } from "../hooks/useAnimationMovies";
 import { useEnglishMovies } from "../hooks/useEnglishMovies";
 import { useSouthMovies } from "../hooks/useSouthMovies";
 import { useDocumentary } from "../hooks/useDocumentary";
+import { useBanglaMovies } from "../hooks/useBanglaMovies";
 import { useContinueWatching } from "../hooks/useContinueWatching";
 import "./Page.css";
 import "./Home.css";
@@ -24,8 +25,10 @@ export default function Home() {
   const { movies: englishMovies } = useEnglishMovies();
   const { movies: southMovies } = useSouthMovies();
   const { movies: documentaries } = useDocumentary();
+  const { movies: banglaMovies } = useBanglaMovies();
   const [playingAnimation, setPlayingAnimation] = useState(null);
   const [playingDoc, setPlayingDoc] = useState(null);
+  const [playingBangla, setPlayingBangla] = useState(null);
   const [playingEnglish, setPlayingEnglish] = useState(null);
   const [playingSouth, setPlayingSouth] = useState(null);
   const [activeGenre, setActiveGenre] = useState("All");
@@ -106,6 +109,15 @@ export default function Home() {
           subtitle={playingEnglish.year ? `${playingEnglish.year} · ${playingEnglish.quality}` : playingEnglish.quality}
           tmdbId={playingEnglish.tmdbId}
           onClose={() => setPlayingEnglish(null)}
+        />
+      )}
+      {playingBangla && (
+        <VideoPlayer
+          src={playingBangla.fileUrl}
+          title={playingBangla.title}
+          subtitle={playingBangla.year ? `Bangla · ${playingBangla.year}` : "Bangla"}
+          tmdbId={playingBangla.tmdbId}
+          onClose={() => setPlayingBangla(null)}
         />
       )}
       {playingDoc && (
@@ -363,6 +375,27 @@ export default function Home() {
                 onPlay: () => setPlayingDoc(m),
               }))}
             seeAllUrl="/documentary"
+          />
+        )}
+
+        <div className="home-divider" />
+
+        {/* ── BANGLA MOVIES highlights ── */}
+        {banglaMovies.length > 0 && (
+          <CategoryRow
+            title="Kolkata Bangla Movies"
+            items={banglaMovies
+              .filter(m => m.rating && m.voteCount > 50)
+              .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+              .slice(0, 20)
+              .map(m => ({
+                title: m.title,
+                tag: `${m.year} · ${m.quality}`,
+                poster: m.tmdbPoster || m.poster,
+                rating: m.rating,
+                onPlay: () => setPlayingBangla(m),
+              }))}
+            seeAllUrl="/bangla-movies"
           />
         )}
 
