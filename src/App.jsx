@@ -6,6 +6,8 @@ import Home from "./pages/Home";
 import CategoryPage from "./pages/CategoryPage";
 import Search from "./pages/Search";
 import SeriesDetail from "./pages/SeriesDetail";
+import EnglishTV from "./pages/EnglishTV";
+import KoreanTV from "./pages/KoreanTV";
 
 export default function App() {
   const [query, setQuery] = useState("");
@@ -17,7 +19,10 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/:slug" element={<CategoryPage />} />
         <Route path="/search" element={<Search query={query} />} />
-        <Route path="/series/:id" element={<SeriesDetail />} />
+        <Route path="/series/:id" element={<SeriesDetail source="korean" />} />
+        <Route path="/tv/:id" element={<SeriesDetail source="english" />} />
+        <Route path="/tvseries" element={<EnglishTV />} />
+        <Route path="/korean" element={<KoreanTV />} />
       </Routes>
       <Footer />
     </BrowserRouter>

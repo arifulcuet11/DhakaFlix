@@ -22,20 +22,24 @@ import { readFileSync, writeFileSync } from "fs";
 import { resolve, dirname }            from "path";
 import { fileURLToPath }               from "url";
 
-const __dir   = dirname(fileURLToPath(import.meta.url));
-const IN_FILE = resolve(__dir, "../public/korean-series.json");
+const __dir = dirname(fileURLToPath(import.meta.url));
 
 // ── CLI args ──────────────────────────────────────────────────
 const args  = process.argv.slice(2);
-const keyIdx = args.indexOf("--key");
-const TMDB_KEY = keyIdx !== -1 ? args[keyIdx + 1] : process.env.TMDB_KEY;
+
+const keyIdx   = args.indexOf("--key");
+const fileIdx  = args.indexOf("--file");
+const TMDB_KEY     = keyIdx  !== -1 ? args[keyIdx  + 1] : process.env.TMDB_KEY;
+const IN_FILE      = fileIdx !== -1
+  ? resolve(args[fileIdx + 1])
+  : resolve(__dir, "../public/korean-series.json");
 const FORCE        = args.includes("--force");
 const RETRY_FAILED = args.includes("--retry-failed");
 
 if (!TMDB_KEY) {
   console.error(
     "ERROR: TMDB API key required.\n" +
-    "  node scripts/enrich-tmdb.mjs --key YOUR_KEY\n" +
+    "  node scripts/enrich-tmdb.mjs --key YOUR_KEY [--file public/english-tv.json]\n" +
     "  or set env: TMDB_KEY=YOUR_KEY node scripts/enrich-tmdb.mjs\n\n" +
     "  Get a free key at: https://www.themoviedb.org/settings/api"
   );

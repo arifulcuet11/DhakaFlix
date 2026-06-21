@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import Hero from "../components/Hero";
 import CategoryRow from "../components/CategoryRow";
 import { categories } from "../data/content";
 import { useKoreanSeries } from "../hooks/useKoreanSeries";
+import { useEnglishTV } from "../hooks/useEnglishTV";
 import "./Page.css";
 import "./Home.css";
 
@@ -10,6 +12,7 @@ const GENRES = ["All", "Drama", "Comedy", "Mystery", "Crime", "Action", "Sci-Fi 
 
 export default function Home() {
   const { series: koreanSeries, loading } = useKoreanSeries();
+  const { series: englishSeries } = useEnglishTV();
   const [activeGenre, setActiveGenre] = useState("All");
 
   const filteredKorean = useMemo(() => {
@@ -58,12 +61,12 @@ export default function Home() {
 
         {/* ── TOP RATED ── */}
         {topRatedCards.length > 0 && (
-          <CategoryRow title="Top Rated" items={topRatedCards} />
+          <CategoryRow title="Top Rated" items={topRatedCards} seeAllUrl="/korean?sort=rating" />
         )}
 
         {/* ── NEW RELEASES ── */}
         {newCards.length > 0 && (
-          <CategoryRow title="New Releases" items={newCards} />
+          <CategoryRow title="New Releases" items={newCards} seeAllUrl="/korean?sort=new" />
         )}
 
         {/* ── KOREAN DRAMA with genre filter ── */}
@@ -74,6 +77,7 @@ export default function Home() {
               {!loading && (
                 <span className="home-section-count">{filteredKorean.length}</span>
               )}
+              <Link to="/korean" className="home-see-all">See all ›</Link>
             </div>
             <div className="home-genre-filter">
               {GENRES.map(g => (
@@ -103,8 +107,31 @@ export default function Home() {
 
         <div className="home-divider" />
 
+        {/* ── ENGLISH TV highlights ── */}
+        {englishSeries.length > 0 && (
+          <CategoryRow
+            title="English TV & WEB Series"
+            items={englishSeries
+              .filter(s => s.rating && s.voteCount > 100)
+              .sort((a, b) => b.rating - a.rating)
+              .slice(0, 20)
+              .map(s => ({
+                title: s.title,
+                tag: `${s.year} · ${s.quality}`,
+                poster: s.tmdbPoster || s.poster,
+                seriesId: s.id,
+                rating: s.rating,
+                genre: s.genre,
+                tvRoute: true,
+              }))}
+            seeAllUrl="/tvseries"
+            tvRoute
+          />
+        )}
+
+        <div className="home-divider" />
+
         <CategoryRow title="Movies" items={categories.movies.items} />
-        <CategoryRow title="TV Series" items={categories.tvseries.items} />
         <CategoryRow title="Games" items={categories.games.items} />
         <CategoryRow title="Software & Tutorials" items={categories.software.items} />
 

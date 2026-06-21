@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import "./CategoryRow.css";
 
-export default function CategoryRow({ title, items, seeAllUrl }) {
+export default function CategoryRow({ title, items, seeAllUrl, tvRoute }) {
   const countMatch = title ? title.match(/\((\d+[^)]*)\)/) : null;
   const cleanTitle = countMatch ? title.replace(/\s*\([^)]*\)/, "").trim() : (title || "");
   const countLabel = countMatch ? countMatch[1] : null;
@@ -14,7 +14,7 @@ export default function CategoryRow({ title, items, seeAllUrl }) {
           <h2 className="row-title">{cleanTitle}</h2>
           {countLabel && <span className="row-count">{countLabel}</span>}
           {seeAllUrl && (
-            <a href={seeAllUrl} className="row-see-all">See all ›</a>
+            <Link to={seeAllUrl} className="row-see-all">See all ›</Link>
           )}
         </div>
       )}
@@ -67,10 +67,13 @@ export default function CategoryRow({ title, items, seeAllUrl }) {
           );
 
           if (item.seriesId) {
+            const route = (tvRoute || item.tvRoute)
+              ? `/tv/${item.seriesId}`
+              : `/series/${item.seriesId}`;
             return (
               <Link
                 key={i}
-                to={`/series/${item.seriesId}`}
+                to={route}
                 className="card"
                 style={{ "--accent": "#E8A020" }}
               >

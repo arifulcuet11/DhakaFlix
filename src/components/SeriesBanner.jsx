@@ -21,7 +21,7 @@ function pickRandomEp(series, excludeUrl = null) {
   return { ep, url: season.folderUrl + encodeURIComponent(ep.filename) };
 }
 
-export default function SeriesBanner({ series, totalEpisodes }) {
+export default function SeriesBanner({ series, totalEpisodes, videoPlaying = false }) {
   const bannerUrl = series.banner || series.poster || "";
 
   const [preview,      setPreview]      = useState(null);
@@ -125,6 +125,11 @@ export default function SeriesBanner({ series, totalEpisodes }) {
 
   // ── sync muted ref ────────────────────────────────────────────
   useEffect(() => { mutedRef.current = previewMuted; }, [previewMuted]);
+
+  // ── stop preview when the main VideoPlayer modal opens ───────
+  useEffect(() => {
+    if (videoPlaying) stopPreview();
+  }, [videoPlaying, stopPreview]);
 
   // ── video playback effect ─────────────────────────────────────
   useEffect(() => {

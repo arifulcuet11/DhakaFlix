@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Navigate } from "react-router-dom";
 import { useKoreanSeries } from "../hooks/useKoreanSeries";
+import { useEnglishTV } from "../hooks/useEnglishTV";
 import SeriesBanner from "../components/SeriesBanner";
 import VideoPlayer from "../components/VideoPlayer";
 import "./SeriesDetail.css";
@@ -18,9 +19,11 @@ function copyLink(url) {
   });
 }
 
-export default function SeriesDetail() {
+export default function SeriesDetail({ source = "korean" }) {
   const { id } = useParams();
-  const { series: seriesData, loading } = useKoreanSeries();
+  const korean  = useKoreanSeries();
+  const english = useEnglishTV();
+  const { series: seriesData, loading } = source === "english" ? english : korean;
   const series = seriesData.find(s => s.id === id);
   const [activeSeason,  setActiveSeason]  = useState(0);
   const [playingIdx,    setPlayingIdx]    = useState(null);
@@ -32,7 +35,7 @@ export default function SeriesDetail() {
   useEffect(() => { setProgress(loadAllProgress()); }, [playingIdx]);
 
   if (loading) return <div className="sd-loading">Loading…</div>;
-  if (!series) return <Navigate to="/tvseries" replace />;
+  if (!series) return <Navigate to={source === "english" ? "/tvseries" : "/tvseries"} replace />;
 
   const season        = series.seasons[activeSeason];
   const episodes      = season.episodes;
@@ -126,7 +129,7 @@ export default function SeriesDetail() {
 
       {/* ── SCROLLABLE RIGHT PANEL ── */}
       <main className="sd-panel-right">
-        <SeriesBanner series={series} totalEpisodes={totalEpisodes} />
+        <SeriesBanner series={series} totalEpisodes={totalEpisodes} videoPlaying={playingIdx !== null} />
 
         <div className="sd-content">
 

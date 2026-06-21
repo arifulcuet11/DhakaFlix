@@ -44,6 +44,18 @@
   font-weight: 500;
 }
 
+.home-see-all {
+  font-size: 12px;
+  font-weight: 600;
+  color: #E8A020;
+  text-decoration: none;
+  letter-spacing: 0.5px;
+  opacity: 0.75;
+  transition: opacity 0.15s ease;
+  white-space: nowrap;
+}
+.home-see-all:hover { opacity: 1; }
+
 /* ── GENRE FILTER PILLS ── */
 .home-genre-filter {
   display: flex;

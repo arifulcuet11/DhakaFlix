@@ -27,6 +27,7 @@ export default function Navbar({ onSearch }) {
           <li><Link to="/">Home</Link></li>
           <li><Link to="/movies">Movies</Link></li>
           <li><Link to="/tvseries">TV Series</Link></li>
+          <li><Link to="/korean">Korean</Link></li>
           <li><Link to="/games">Games</Link></li>
           <li><Link to="/software">Software</Link></li>
         </ul>
