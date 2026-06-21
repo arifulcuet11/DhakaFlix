@@ -8,6 +8,7 @@ import { useKoreanSeries } from "../hooks/useKoreanSeries";
 import { useEnglishTV } from "../hooks/useEnglishTV";
 import { useForeignMovies } from "../hooks/useForeignMovies";
 import { useAnimationMovies } from "../hooks/useAnimationMovies";
+import { useContinueWatching } from "../hooks/useContinueWatching";
 import "./Page.css";
 import "./Home.css";
 
@@ -21,6 +22,9 @@ export default function Home() {
   const [playingAnimation, setPlayingAnimation] = useState(null);
   const [activeGenre, setActiveGenre] = useState("All");
   const [playingMovie, setPlayingMovie] = useState(null);
+  const [continuePlayingUrl, setContinuePlayingUrl] = useState(null);
+
+  const continueWatching = useContinueWatching(koreanSeries, englishSeries);
 
   const filteredKorean = useMemo(() => {
     if (activeGenre === "All") return koreanSeries;
@@ -78,9 +82,37 @@ export default function Home() {
           onClose={() => setPlayingAnimation(null)}
         />
       )}
+      {continuePlayingUrl && (
+        <VideoPlayer
+          src={continuePlayingUrl}
+          title={continueWatching.find(i => i.episodeUrl === continuePlayingUrl)?.title || ""}
+          subtitle={(() => {
+            const item = continueWatching.find(i => i.episodeUrl === continuePlayingUrl);
+            if (!item) return "";
+            return `S${item.season} · E${item.episodeNum}`;
+          })()}
+          onClose={() => setContinuePlayingUrl(null)}
+        />
+      )}
       <Hero />
 
       <div className="home-content">
+
+        {/* ── CONTINUE WATCHING ── */}
+        {continueWatching.length > 0 && (
+          <CategoryRow
+            title="Continue Watching"
+            items={continueWatching.slice(0, 20).map(item => ({
+              title: item.title,
+              tag: `S${item.season} · E${item.episodeNum}`,
+              poster: item.poster,
+              progressPct: item.duration
+                ? Math.min(99, Math.round((item.progress / item.duration) * 100))
+                : null,
+              onPlay: () => setContinuePlayingUrl(item.episodeUrl),
+            }))}
+          />
+        )}
 
         {/* ── TOP RATED ── */}
         {topRatedCards.length > 0 && (

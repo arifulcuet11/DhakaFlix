@@ -610,6 +610,31 @@
   .vp-end-title  { font-size: 24px; }
 }
 
+@media (max-width: 768px) {
+  /* always-visible skip buttons with comfortable touch targets */
+  .vp-controls { opacity: 1 !important; }
+  .vp-controls.vp-hidden { opacity: 0 !important; }
+
+  .vp-btn {
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 24px;
+    padding: 6px 8px;
+  }
+
+  .vp-btn-play {
+    font-size: 30px;
+    min-width: 52px;
+    min-height: 52px;
+  }
+
+  /* hide less-critical right-side buttons on small screens to save space */
+  .vp-btn-cinema,
+  .vp-btn-speed {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .vp-overlay, .vp-modal, .vp-spin-ring { animation: none !important; }
   .vp-controls, .vp-header { transition: none !important; }

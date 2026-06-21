@@ -53,6 +53,11 @@ export default function CategoryRow({ title, items, seeAllUrl, tvRoute }) {
                 {item.rating && (
                   <span className="card-rating-badge">&#9733; {item.rating}</span>
                 )}
+                {item.progressPct != null && (
+                  <div className="card-progress-bar">
+                    <div className="card-progress-fill" style={{ width: `${item.progressPct}%` }} />
+                  </div>
+                )}
                 <div className="card-overlay">
                   <div className="card-play-btn">&#9654;</div>
                   {yearLabel && <span className="card-overlay-tag">{yearLabel}</span>}

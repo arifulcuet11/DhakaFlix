@@ -1,11 +1,17 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import "./Navbar.css";
 
 export default function Navbar({ onSearch }) {
   const [query, setQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  function navClass(path, exact = false) {
+    if (exact) return location.pathname === path ? "active-link" : "";
+    return location.pathname.startsWith(path) ? "active-link" : "";
+  }
 
   function handleSearch(e) {
     const val = e.target.value;
@@ -24,12 +30,14 @@ export default function Navbar({ onSearch }) {
         </button>
 
         <ul className={`navbar-links ${menuOpen ? "open" : ""}`} onClick={() => setMenuOpen(false)}>
-          <li><Link to="/">Home</Link></li>
-          <li><Link to="/movies">Movies</Link></li>
-          <li><Link to="/tvseries">TV Series</Link></li>
-          <li><Link to="/korean">Korean</Link></li>
-          <li><Link to="/games">Games</Link></li>
-          <li><Link to="/software">Software</Link></li>
+          <li><Link to="/" className={navClass("/", true)}>Home</Link></li>
+          <li><Link to="/korean" className={navClass("/korean")}>Korean</Link></li>
+          <li><Link to="/tvseries" className={navClass("/tvseries")}>TV Series</Link></li>
+          <li><Link to="/foreign-movies" className={navClass("/foreign-movies")}>Foreign</Link></li>
+          <li><Link to="/animation-movies" className={navClass("/animation-movies")}>Animation</Link></li>
+          <li><Link to="/movies" className={navClass("/movies")}>Movies</Link></li>
+          <li><Link to="/games" className={navClass("/games")}>Games</Link></li>
+          <li><Link to="/software" className={navClass("/software")}>Software</Link></li>
         </ul>
 
         <div className="navbar-search">

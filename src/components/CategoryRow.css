@@ -171,6 +171,23 @@
 .card:hover .card-rating-badge { opacity: 0; } /* hidden under overlay */
 .card-rating-badge { opacity: 1; }              /* always visible when not hovering */
 
+/* progress bar — bottom of thumb */
+.card-progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(255,255,255,0.15);
+  z-index: 2;
+}
+.card-progress-fill {
+  height: 100%;
+  background: #E8A020;
+  border-radius: 0 2px 2px 0;
+  transition: width 0.3s ease;
+}
+
 /* quality badge top-right */
 .card-quality-badge {
   position: absolute;

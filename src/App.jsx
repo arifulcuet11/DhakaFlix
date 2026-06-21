@@ -2,6 +2,7 @@ import { useState } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import BottomNav from "./components/BottomNav";
 import Home from "./pages/Home";
 import CategoryPage from "./pages/CategoryPage";
 import Search from "./pages/Search";
@@ -29,6 +30,7 @@ export default function App() {
         <Route path="/animation-movies" element={<AnimationMovies />} />
       </Routes>
       <Footer />
+      <BottomNav />
     </BrowserRouter>
   );
 }

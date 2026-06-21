@@ -30,36 +30,55 @@ function parseVTT(raw) {
   return parseSRT(raw.replace(/WEBVTT.*?\n\n/, ""));
 }
 
-const SPEEDS  = [0.5, 0.75, 1, 1.25, 1.5, 2];
-const STORAGE = "dhakaflix_progress";
+const SPEEDS   = [0.5, 0.75, 1, 1.25, 1.5, 2];
+const STORAGE  = "dhakaflix_progress";
+const DURATION_STORAGE = "dhakaflix_duration";
+const VOLUME_STORAGE   = "dhakaflix_volume";
 
 function saveProgress(src, time) {
   try {
     const all = JSON.parse(localStorage.getItem(STORAGE) || "{}");
     all[src] = time;
     localStorage.setItem(STORAGE, JSON.stringify(all));
+    window.dispatchEvent(new Event("dhakaflix_progress_updated"));
   } catch {}
 }
 function loadProgress(src) {
   try { return JSON.parse(localStorage.getItem(STORAGE) || "{}")[src] || 0; }
   catch { return 0; }
 }
+function saveDuration(src, duration) {
+  try {
+    const all = JSON.parse(localStorage.getItem(DURATION_STORAGE) || "{}");
+    all[src] = duration;
+    localStorage.setItem(DURATION_STORAGE, JSON.stringify(all));
+  } catch {}
+}
+function loadVolume() {
+  try { return parseFloat(localStorage.getItem(VOLUME_STORAGE)) || 1; }
+  catch { return 1; }
+}
+function persistVolume(v) {
+  try { localStorage.setItem(VOLUME_STORAGE, String(v)); } catch {}
+}
 
 // episodes: [{episode, filename, finale, url}]  optional — for episode panel
 export default function VideoPlayer({ src, title, subtitle, onClose, onNext, onPrev, episodes, currentEpIdx, onJumpTo }) {
-  const videoRef   = useRef(null);
-  const wrapRef    = useRef(null);
-  const hideTimer  = useRef(null);
-  const seekRef    = useRef(null);
-  const volRef     = useRef(null);
-  const tapTimer   = useRef(null);
-  const subRef     = useRef(null);
+  const videoRef      = useRef(null);
+  const wrapRef       = useRef(null);
+  const hideTimer     = useRef(null);
+  const seekRef       = useRef(null);
+  const volRef        = useRef(null);
+  const tapTimer      = useRef(null);
+  const subRef        = useRef(null);
+  const touchStartX   = useRef(null);
+  const touchStartY   = useRef(null);
 
   const [playing,    setPlaying]    = useState(false);
   const [current,    setCurrent]    = useState(0);
   const [duration,   setDuration]   = useState(0);
   const [buffered,   setBuffered]   = useState(0);
-  const [volume,     setVolume]     = useState(1);
+  const [volume,     setVolume]     = useState(() => loadVolume());
   const [muted,      setMuted]      = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [showCtrl,   setShowCtrl]   = useState(true);
@@ -114,6 +133,7 @@ export default function VideoPlayer({ src, title, subtitle, onClose, onNext, onP
       if (cancelled) return;
       const saved = loadProgress(src);
       if (saved > 10) { v.currentTime = saved; setResumed(true); setTimeout(() => setResumed(false), 3000); }
+      v.volume = loadVolume();
       v.play().catch(e => {
         // AbortError is expected when src changes or component unmounts mid-play
         if (e.name !== "AbortError") console.warn("play() failed:", e);
@@ -199,8 +219,8 @@ export default function VideoPlayer({ src, title, subtitle, onClose, onNext, onP
           v.currentTime = Math.min(v.duration || 0, v.currentTime + 10);
           setSkipFlash("fwd"); setTimeout(() => setSkipFlash(null), 600);
           revealControls(); break;
-        case "ArrowUp":   e.preventDefault(); v.volume = Math.min(1, v.volume + 0.1); setVolume(v.volume); break;
-        case "ArrowDown": e.preventDefault(); v.volume = Math.max(0, v.volume - 0.1); setVolume(v.volume); break;
+        case "ArrowUp":   e.preventDefault(); v.volume = Math.min(1, v.volume + 0.1); setVolume(v.volume); persistVolume(v.volume); break;
+        case "ArrowDown": e.preventDefault(); v.volume = Math.max(0, v.volume - 0.1); setVolume(v.volume); persistVolume(v.volume); break;
         case "n": case "N": if (onNext) onNext(); break;
         default: break;
       }
@@ -216,7 +236,13 @@ export default function VideoPlayer({ src, title, subtitle, onClose, onNext, onP
     setCurrent(v.currentTime);
     if (v.buffered.length > 0) setBuffered(v.buffered.end(v.buffered.length - 1));
   }
-  function onDurationChange() { if (videoRef.current) setDuration(videoRef.current.duration); }
+  function onDurationChange() {
+    if (videoRef.current) {
+      const d = videoRef.current.duration;
+      setDuration(d);
+      if (d && isFinite(d)) saveDuration(src, d);
+    }
+  }
   function onPlay()    { setPlaying(true);  revealControls(); }
   function onPause()   { setPlaying(false); setShowCtrl(true); clearTimeout(hideTimer.current); }
   function onWaiting() { setWaiting(true); }
@@ -273,7 +299,7 @@ export default function VideoPlayer({ src, title, subtitle, onClose, onNext, onP
     if (!v || !bar) return;
     const rect = bar.getBoundingClientRect();
     const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    v.volume = ratio; setVolume(ratio);
+    v.volume = ratio; setVolume(ratio); persistVolume(ratio);
     if (ratio > 0) { v.muted = false; setMuted(false); }
   }
   function onVolMouseDown(e) {
@@ -346,6 +372,29 @@ export default function VideoPlayer({ src, title, subtitle, onClose, onNext, onP
     revealControls();
   }
 
+  // ── touch swipe seeking ─────────────────────────────────────
+  function onTouchStart(e) {
+    // only track if not on controls/header/ep-panel
+    if (e.target.closest(".vp-controls") || e.target.closest(".vp-header") || e.target.closest(".vp-ep-panel")) return;
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  }
+  function onTouchEnd(e) {
+    if (touchStartX.current === null) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+    touchStartX.current = null;
+    touchStartY.current = null;
+
+    // ignore if predominantly vertical (scroll)
+    if (Math.abs(deltaY) > Math.abs(deltaX)) return;
+    // require at least 50px horizontal swipe
+    if (Math.abs(deltaX) < 50) return;
+
+    const seekSec = Math.round(deltaX / 50) * 10;
+    skip(seekSec);
+  }
+
   // ── subtitle file picker ─────────────────────────────────────
   function onSubFile(e) {
     const file = e.target.files[0];
@@ -380,6 +429,8 @@ export default function VideoPlayer({ src, title, subtitle, onClose, onNext, onP
             className={`vp-wrap${fullscreen ? " vp-fullscreen" : ""}`}
             onMouseMove={revealControls}
             onClick={onWrapClick}
+            onTouchStart={onTouchStart}
+            onTouchEnd={onTouchEnd}
           >
             {/* header */}
             <div className={`vp-header${showCtrl ? "" : " vp-hidden"}`} onClick={e => e.stopPropagation()}>
