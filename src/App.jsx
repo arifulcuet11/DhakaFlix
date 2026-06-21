@@ -5,6 +5,7 @@ import Footer from "./components/Footer";
 import Home from "./pages/Home";
 import CategoryPage from "./pages/CategoryPage";
 import Search from "./pages/Search";
+import SeriesDetail from "./pages/SeriesDetail";
 
 export default function App() {
   const [query, setQuery] = useState("");
@@ -16,6 +17,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/:slug" element={<CategoryPage />} />
         <Route path="/search" element={<Search query={query} />} />
+        <Route path="/series/:id" element={<SeriesDetail />} />
       </Routes>
       <Footer />
     </BrowserRouter>

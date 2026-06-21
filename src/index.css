@@ -1,20 +1,24 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --red: #e50914;
-  --dark: #141414;
-  --card-bg: #1f1f1f;
-  --card-hover: #2a2a2a;
-  --text: #ffffff;
-  --text-muted: #aaaaaa;
-  --nav-h: 64px;
+  --ground:   #0D0F18;
+  --surface:  #13162A;
+  --accent:   #E8A020;
+  --red:      #e50914;
+  --dark:     #0D0F18;
+  --card-bg:  #13162A;
+  --card-hover: #1C2038;
+  --text:     #E8E6F0;
+  --text-muted: #8A8AA8;
+  --nav-h:    64px;
 }
 
 body {
-  background: var(--dark);
+  background: var(--ground);
   color: var(--text);
-  font-family: 'Segoe UI', Arial, sans-serif;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
 }
 
 #root {
