@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useBanglaMovies } from "../hooks/useBanglaMovies";
 import VideoPlayer from "../components/VideoPlayer";
+import PageBanner from "../components/PageBanner";
 import "../components/SeriesGrid.css";
 
 const SORT_OPTIONS = [
@@ -52,6 +53,8 @@ export default function BanglaMovies() {
           onClose={() => setPlaying(null)}
         />
       )}
+
+      <PageBanner items={movies} count={5} />
 
       <div className="sg-header">
         <div className="sg-header-top">

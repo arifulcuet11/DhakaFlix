@@ -2,6 +2,7 @@ import { useMemo, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAnimationMovies } from "../hooks/useAnimationMovies";
 import VideoPlayer from "../components/VideoPlayer";
+import PageBanner from "../components/PageBanner";
 import "../components/SeriesGrid.css";
 
 const SORT_OPTIONS = [
@@ -61,6 +62,8 @@ export default function AnimationMovies() {
           onClose={() => setPlaying(null)}
         />
       )}
+
+      <PageBanner items={movies} count={5} />
 
       <div className="sg-header">
         <div className="sg-header-top">

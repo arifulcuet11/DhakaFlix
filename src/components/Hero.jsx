@@ -1,44 +1,88 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useKoreanSeries } from "../hooks/useKoreanSeries";
-import { featured } from "../data/content";
+import { useEnglishMovies } from "../hooks/useEnglishMovies";
+import { useEnglishTV } from "../hooks/useEnglishTV";
+import { useSouthMovies } from "../hooks/useSouthMovies";
+import { useAnimationMovies } from "../hooks/useAnimationMovies";
 import "./Hero.css";
 
 const INTERVAL = 8000;
-const MAX_SIDE_THUMBS = 8;
+const MAX_SIDE_THUMBS = 6;
+const HERO_SLIDES = 6;
 
-const fallbackSlides = featured.map((f, i) => ({
-  type: "category",
-  title: f.title,
-  subtitle: f.subtitle,
-  banner: null,
-  poster: null,
-  tag: f.tag,
-  url: f.url,
-  seed: i + 10,
-}));
+function pickTopRecent(items, count, mapFn) {
+  return items
+    .filter(s => s.tmdbBanner || s.banner)
+    .sort((a, b) => (parseInt(b.year) || 0) - (parseInt(a.year) || 0))
+    .slice(0, count)
+    .map(mapFn);
+}
 
 export default function Hero() {
   const { series: koreanSeries } = useKoreanSeries();
+  const { movies: englishMovies } = useEnglishMovies();
+  const { series: englishTV } = useEnglishTV();
+  const { movies: southMovies } = useSouthMovies();
+  const { movies: animationMovies } = useAnimationMovies();
 
   const slides = useMemo(() => {
-    const seriesSlides = koreanSeries
-      .filter(s => s.tmdbBanner || s.banner)
-      .map(s => ({
-        type: "series",
-        id: s.id,
-        title: s.title,
-        subtitle: s.synopsis,
-        banner: s.tmdbBanner || s.banner,   // TMDB 1280px backdrop first
-        poster: s.tmdbPoster || s.poster,
-        tag: s.genre?.[0] ?? "Korean Drama",
-        year: s.year,
-        quality: s.quality,
-        rating: s.rating,
-        episodeCount: s.seasons?.reduce((n, se) => n + se.episodes.length, 0) ?? 0,
-      }));
-    return [...seriesSlides, ...fallbackSlides];
-  }, [koreanSeries]);
+    const korean = pickTopRecent(koreanSeries, 1, s => ({
+      type: "series",
+      id: s.id,
+      title: s.title,
+      subtitle: s.synopsis,
+      banner: s.tmdbBanner || s.banner,
+      poster: s.tmdbPoster || s.poster,
+      tag: s.genre?.[0] ?? "Korean Drama",
+      year: s.year,
+      quality: s.quality,
+      rating: s.rating,
+      episodeCount: s.seasons?.reduce((n, se) => n + se.episodes.length, 0) ?? 0,
+    }));
+
+    const toMovieSlide = (tag) => (s) => ({
+      type: "movie",
+      title: s.title,
+      subtitle: s.synopsis || null,
+      banner: s.tmdbBanner || s.banner,
+      poster: s.tmdbPoster || s.poster,
+      tag: s.genre?.[0] ?? tag,
+      year: s.year,
+      quality: s.quality,
+      rating: s.rating,
+      url: s.fileUrl || s.url || null,
+    });
+
+    const toTVSlide = (s) => ({
+      type: "tvseries",
+      title: s.title,
+      subtitle: s.synopsis || null,
+      banner: s.tmdbBanner || s.banner,
+      poster: s.tmdbPoster || s.poster,
+      tag: s.genre?.[0] ?? "TV Series",
+      year: s.year,
+      quality: s.quality,
+      rating: s.rating,
+      url: s.url || null,
+    });
+
+    const enMovies  = pickTopRecent(englishMovies,  2, toMovieSlide("Movie"));
+    const enTV      = pickTopRecent(englishTV,        1, toTVSlide);
+    const southMov  = pickTopRecent(southMovies,      1, toMovieSlide("South"));
+    const animation = pickTopRecent(animationMovies,  1, toMovieSlide("Animation"));
+
+    // Interleave: korean, en-movie, en-tv, south, animation
+    const all = [];
+    const sources = [korean, enMovies, enTV, southMov, animation];
+    const maxLen = Math.max(...sources.map(a => a.length));
+    for (let i = 0; i < maxLen && all.length < HERO_SLIDES; i++) {
+      for (const src of sources) {
+        if (i < src.length && all.length < HERO_SLIDES) all.push(src[i]);
+      }
+    }
+    return all;
+  }, [koreanSeries, englishMovies, englishTV, southMovies, animationMovies]);
 
   const [current, setCurrent] = useState(0);
   const [prev, setPrev] = useState(null);
@@ -105,11 +149,14 @@ export default function Hero() {
         </Link>
       );
     }
-    return (
-      <a href={s.url} target="_blank" rel="noreferrer" className="hero-btn-play">
-        &#9654; Browse
-      </a>
-    );
+    if (s.url) {
+      return (
+        <a href={s.url} target="_blank" rel="noreferrer" className="hero-btn-play">
+          &#9654; Watch Now
+        </a>
+      );
+    }
+    return null;
   }
 
   const totalDots = Math.min(slides.length, 20);

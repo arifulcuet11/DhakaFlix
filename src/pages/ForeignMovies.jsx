@@ -2,6 +2,7 @@ import { useMemo, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useForeignMovies } from "../hooks/useForeignMovies";
 import VideoPlayer from "../components/VideoPlayer";
+import PageBanner from "../components/PageBanner";
 import "../components/SeriesGrid.css";
 
 const SORT_OPTIONS = [
@@ -53,7 +54,6 @@ export default function ForeignMovies() {
 
   return (
     <div className="sg-root">
-      {/* video player */}
       {playing && (
         <VideoPlayer
           src={playing.fileUrl}
@@ -62,6 +62,8 @@ export default function ForeignMovies() {
           onClose={() => setPlaying(null)}
         />
       )}
+
+      <PageBanner items={movies} count={5} />
 
       <div className="sg-header">
         <div className="sg-header-top">

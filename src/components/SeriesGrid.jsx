@@ -1,5 +1,6 @@
 import { useMemo, useState, useCallback } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import PageBanner from "./PageBanner";
 import "./SeriesGrid.css";
 
 const SORT_OPTIONS = [
@@ -11,7 +12,7 @@ const SORT_OPTIONS = [
 
 const PAGE_SIZE = 60;
 
-export default function SeriesGrid({ series, loading, genres, title, routePrefix = "/series" }) {
+export default function SeriesGrid({ series, loading, genres, title, routePrefix = "/series", showBanner = true }) {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const initSort  = searchParams.get("sort")  || "rating";
@@ -65,6 +66,8 @@ export default function SeriesGrid({ series, loading, genres, title, routePrefix
 
   return (
     <div className="sg-root">
+
+      {showBanner && <PageBanner items={series} count={5} />}
 
       {/* ── HEADER ── */}
       <div className="sg-header">
