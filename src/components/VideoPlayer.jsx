@@ -154,8 +154,9 @@ function persistVolume(v) {
 }
 
 // episodes: [{episode, filename, finale, url}]  optional — for episode panel
-export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, episodeNum, onClose, onNext, onPrev, episodes, currentEpIdx, onJumpTo }) {
+export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, episodeNum, poster, onClose, onNext, onPrev, episodes, currentEpIdx, onJumpTo }) {
   const videoRef      = useRef(null);
+  const thumbVideoRef = useRef(null);
   const wrapRef       = useRef(null);
   const hideTimer     = useRef(null);
   const seekRef       = useRef(null);
@@ -164,6 +165,7 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
   const subRef        = useRef(null);
   const touchStartX   = useRef(null);
   const touchStartY   = useRef(null);
+  const thumbTimer    = useRef(null);
 
   const [playing,    setPlaying]    = useState(false);
   const [current,    setCurrent]    = useState(0);
@@ -195,6 +197,42 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
   const [subLangFilter,  setSubLangFilter]  = useState("en");
   const [osKey,          setOsKey]          = useState(OS_API_KEY);
   const [showKeyInput,   setShowKeyInput]   = useState(false); // unused with hardcoded key
+  const [thumbDataUrl,   setThumbDataUrl]   = useState(null);
+  const [skipRipple,     setSkipRipple]     = useState(null); // {dir, key}
+  const [glowColor,      setGlowColor]      = useState("74,111,165");
+
+  // ── ambient glow from poster ────────────────────────────────
+  useEffect(() => {
+    if (!poster) return;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = 8; canvas.height = 8;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, 8, 8);
+        const d = ctx.getImageData(0, 0, 8, 8).data;
+        let r = 0, g = 0, b = 0;
+        for (let i = 0; i < d.length; i += 4) { r += d[i]; g += d[i+1]; b += d[i+2]; }
+        const n = d.length / 4;
+        const boost = 1.4;
+        setGlowColor(`${Math.min(255,Math.round(r/n*boost))},${Math.min(255,Math.round(g/n*boost))},${Math.min(255,Math.round(b/n*boost))}`);
+      } catch {}
+    };
+    img.src = poster;
+  }, [poster]);
+
+  // ── thumbnail seek preview ───────────────────────────────────
+  function updateThumb(time) {
+    const tv = thumbVideoRef.current;
+    if (!tv || !src) return;
+    if (!tv.src) { tv.src = src; tv.preload = "metadata"; }
+    clearTimeout(thumbTimer.current);
+    thumbTimer.current = setTimeout(() => {
+      tv.currentTime = time;
+    }, 80);
+  }
 
   // ── auto-hide ───────────────────────────────────────────────
   const revealControls = useCallback(() => {
@@ -312,12 +350,12 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
         case "ArrowLeft":
           e.preventDefault();
           v.currentTime = Math.max(0, v.currentTime - 10);
-          setSkipFlash("back"); setTimeout(() => setSkipFlash(null), 600);
+          setSkipRipple({ dir: "back", key: Date.now() }); setTimeout(() => setSkipRipple(null), 700);
           revealControls(); break;
         case "ArrowRight":
           e.preventDefault();
           v.currentTime = Math.min(v.duration || 0, v.currentTime + 10);
-          setSkipFlash("fwd"); setTimeout(() => setSkipFlash(null), 600);
+          setSkipRipple({ dir: "fwd", key: Date.now() }); setTimeout(() => setSkipRipple(null), 700);
           revealControls(); break;
         case "ArrowUp":   e.preventDefault(); v.volume = Math.min(1, v.volume + 0.1); setVolume(v.volume); persistVolume(v.volume); break;
         case "ArrowDown": e.preventDefault(); v.volume = Math.max(0, v.volume - 0.1); setVolume(v.volume); persistVolume(v.volume); break;
@@ -367,7 +405,9 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
     if (!bar) return;
     const rect = bar.getBoundingClientRect();
     const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    setSeekTooltip({ x: e.clientX - rect.left, time: ratio * duration });
+    const hoverTime = ratio * duration;
+    setSeekTooltip({ x: e.clientX - rect.left, time: hoverTime });
+    updateThumb(hoverTime);
   }
   function onSeekMouseDown(e) {
     e.preventDefault();
@@ -467,8 +507,11 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
     const v = videoRef.current;
     if (!v) return;
     v.currentTime = Math.max(0, Math.min(v.duration || 0, v.currentTime + sec));
-    setSkipFlash(sec > 0 ? "fwd" : "back");
-    setTimeout(() => setSkipFlash(null), 600);
+    const dir = sec > 0 ? "fwd" : "back";
+    const key = Date.now();
+    setSkipFlash(null);
+    setSkipRipple({ dir, key });
+    setTimeout(() => setSkipRipple(null), 700);
     revealControls();
   }
 
@@ -567,6 +610,15 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
   const volPct  = muted ? 0 : volume * 100;
   const pipSupported = document.pictureInPictureEnabled;
 
+  // chapter markers every 10 min, skip first and last
+  const chapterMarkers = duration > 600
+    ? Array.from({ length: Math.floor(duration / 600) - 1 }, (_, i) => ((i + 1) * 600 / duration) * 100)
+    : [];
+
+  // spinner ring progress — circumference for r=20 circle = ~125.6
+  const spinCirc = 125.6;
+  const spinDash = bufPct ? spinCirc * (bufPct / 100) : 0;
+
   // filtered subtitle results — sorted by downloads already
   const subCache = loadSubCache();
   const filteredSubs = (subLangFilter === "all" ? subResults : subResults.filter(r => r.lang === subLangFilter))
@@ -584,8 +636,30 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
       {/* cinematic page dim */}
       {cinematic && <div className="vp-cinematic-dim" onClick={onClose} />}
 
-      <div className={`vp-overlay${cinematic ? " vp-cinematic" : ""}`} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-        <div className="vp-modal">
+      {/* hidden thumbnail video — no crossOrigin, FTP has no CORS */}
+      <video
+        ref={thumbVideoRef}
+        style={{ display: "none" }}
+        preload="metadata"
+        muted
+        playsInline
+        onSeeked={() => {
+          const tv = thumbVideoRef.current;
+          if (!tv) return;
+          try {
+            const c = document.createElement("canvas");
+            c.width = 160; c.height = 90;
+            c.getContext("2d").drawImage(tv, 0, 0, 160, 90);
+            setThumbDataUrl(c.toDataURL("image/jpeg", 0.7));
+          } catch { setThumbDataUrl(null); }
+        }}
+      />
+
+      <div
+        className={`vp-overlay${cinematic ? " vp-cinematic" : ""}`}
+        style={{ "--glow": glowColor }}
+      >
+        <div className="vp-modal vp-modal--glow">
 
           {/* ── VIDEO WRAP ── */}
           <div
@@ -640,15 +714,36 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
               </div>
             )}
 
-            {/* spinner */}
+            {/* spinner with buffer arc */}
             {waiting && !endOverlay && (
-              <div className="vp-spinner"><div className="vp-spin-ring" /></div>
+              <div className="vp-spinner">
+                <svg className="vp-spin-svg" viewBox="0 0 48 48">
+                  <circle className="vp-spin-track" cx="24" cy="24" r="20" />
+                  {bufPct > 0 && (
+                    <circle
+                      className="vp-spin-buf-arc"
+                      cx="24" cy="24" r="20"
+                      strokeDasharray={`${spinDash} ${spinCirc}`}
+                      strokeDashoffset="0"
+                    />
+                  )}
+                  <circle className="vp-spin-arc" cx="24" cy="24" r="20" />
+                </svg>
+              </div>
             )}
 
-            {/* skip flash */}
-            {skipFlash && (
-              <div className={`vp-skip-flash vp-skip-${skipFlash}`}>
-                {skipFlash === "fwd" ? "+10s ▶▶" : "◀◀ -10s"}
+            {/* skip ripple */}
+            {skipRipple && (
+              <div key={skipRipple.key} className={`vp-ripple vp-ripple--${skipRipple.dir}`}>
+                <div className="vp-ripple-ring" />
+                <div className="vp-ripple-ring vp-ripple-ring--2" />
+                <svg className="vp-ripple-icon" viewBox="0 0 24 24" fill="currentColor">
+                  {skipRipple.dir === "fwd"
+                    ? <path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/>
+                    : <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+                  }
+                </svg>
+                <span className="vp-ripple-label">{skipRipple.dir === "fwd" ? "+10s" : "-10s"}</span>
               </div>
             )}
 
@@ -815,16 +910,22 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
                     className="vp-seek-track"
                     onMouseDown={onSeekMouseDown}
                     onMouseMove={onSeekMouseMove}
-                    onMouseLeave={() => setSeekTooltip(null)}
+                    onMouseLeave={() => { setSeekTooltip(null); setThumbDataUrl(null); }}
                   >
                     {seekTooltip && (
                       <div className="vp-seek-tooltip" style={{ left: seekTooltip.x }}>
-                        {fmt(seekTooltip.time)}
+                        {thumbDataUrl && (
+                          <img className="vp-thumb-preview" src={thumbDataUrl} alt="" />
+                        )}
+                        <span>{fmt(seekTooltip.time)}</span>
                       </div>
                     )}
                     <div className="vp-seek-buf"   style={{ width: `${bufPct}%` }} />
                     <div className="vp-seek-fill"  style={{ width: `${pct}%` }} />
                     <div className="vp-seek-thumb" style={{ left:  `${pct}%` }} />
+                    {chapterMarkers.map(pos => (
+                      <div key={pos} className="vp-chapter-mark" style={{ left: `${pos}%` }} />
+                    ))}
                   </div>
                 </div>
 

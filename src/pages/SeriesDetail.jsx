@@ -93,6 +93,7 @@ export default function SeriesDetail({ source = "korean" }) {
           src={episodeUrl(playingEp)}
           title={series.title}
           subtitle={`Episode ${String(playingEp.episode).padStart(2, "0")}${playingEp.finale ? " — Finale" : ""}`}
+          poster={series.tmdbPoster || series.poster}
           tmdbId={series.tmdbId}
           seasonNum={activeSeason + 1}
           episodeNum={playingEp.episode}
