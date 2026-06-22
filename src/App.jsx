@@ -15,6 +15,7 @@ import EnglishMovies from "./pages/EnglishMovies";
 import SouthMovies from "./pages/SouthMovies";
 import Documentary from "./pages/Documentary";
 import BanglaMovies from "./pages/BanglaMovies";
+import Watchlist from "./pages/Watchlist";
 
 export default function App() {
   const [query, setQuery] = useState("");
@@ -36,6 +37,7 @@ export default function App() {
         <Route path="/south-movies" element={<SouthMovies />} />
         <Route path="/documentary" element={<Documentary />} />
         <Route path="/bangla-movies" element={<BanglaMovies />} />
+        <Route path="/watchlist" element={<Watchlist />} />
       </Routes>
       <Footer />
       <BottomNav />

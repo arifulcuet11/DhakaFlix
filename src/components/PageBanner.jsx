@@ -59,7 +59,10 @@ export default function PageBanner({ items = [], count = 5 }) {
       <div className="pb-overlay" />
 
       <div className="pb-content">
-        <div className="pb-tag">{slide.genre?.[0] ?? slide.tag ?? "New"}</div>
+        <div className="pb-eyebrow">
+          <div className="pb-tag">{slide.genre?.[0] ?? slide.tag ?? "New"}</div>
+          {current === 0 && <div className="pb-new-label">New Release</div>}
+        </div>
         <h2 className="pb-title">{slide.title}</h2>
         <div className="pb-meta">
           {slide.year && <span>{slide.year}</span>}

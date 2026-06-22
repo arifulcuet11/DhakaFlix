@@ -23,7 +23,8 @@ function buildContinueWatching(koreanSeries, englishSeries) {
     for (const series of koreanSeries) {
       for (const season of series.seasons || []) {
         for (const ep of season.episodes || []) {
-          if (ep.url === episodeUrl) {
+          const builtUrl = season.folderUrl + encodeURIComponent(ep.filename);
+          if (builtUrl === episodeUrl) {
             found = {
               seriesId: series.id,
               title: series.title,
@@ -48,7 +49,8 @@ function buildContinueWatching(koreanSeries, englishSeries) {
       for (const series of englishSeries) {
         for (const season of series.seasons || []) {
           for (const ep of season.episodes || []) {
-            if (ep.url === episodeUrl) {
+            const builtUrl = season.folderUrl + encodeURIComponent(ep.filename);
+            if (builtUrl === episodeUrl) {
               found = {
                 seriesId: series.id,
                 title: series.title,
@@ -72,7 +74,16 @@ function buildContinueWatching(koreanSeries, englishSeries) {
     if (found) results.push(found);
   }
 
-  return results;
+  // One entry per series — keep the episode with the highest number (last watched)
+  const bySeriesId = new Map();
+  for (const item of results) {
+    const existing = bySeriesId.get(item.seriesId);
+    if (!existing || item.episodeNum > existing.episodeNum) {
+      bySeriesId.set(item.seriesId, item);
+    }
+  }
+
+  return Array.from(bySeriesId.values());
 }
 
 export function useContinueWatching(koreanSeries, englishSeries) {

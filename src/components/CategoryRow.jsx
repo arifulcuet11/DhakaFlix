@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
+import { useWatchlist } from "../hooks/useWatchlist";
 import "./CategoryRow.css";
 
 export default function CategoryRow({ title, items, seeAllUrl, tvRoute }) {
+  const { isInList, toggle } = useWatchlist();
   const countMatch = title ? title.match(/\((\d+[^)]*)\)/) : null;
   const cleanTitle = countMatch ? title.replace(/\s*\([^)]*\)/, "").trim() : (title || "");
   const countLabel = countMatch ? countMatch[1] : null;
@@ -30,10 +32,42 @@ export default function CategoryRow({ title, items, seeAllUrl, tvRoute }) {
           const yearLabel    = item.tag ? item.tag.split("·")[0]?.trim() : null;
 
           const genreLabel = item.genre?.slice(0, 2).join(" · ") || null;
+          const isNew = yearLabel && parseInt(yearLabel) >= 2024;
+
+          const wlId = item.seriesId || item.title;
+          const wlItem = {
+            id: wlId,
+            title: item.title,
+            poster: item.poster,
+            tag: item.tag,
+            genre: item.genre,
+            rating: item.rating,
+            seriesId: item.seriesId || null,
+            tvRoute: tvRoute || item.tvRoute || false,
+            url: item.url || null,
+            onPlay: item.onPlay ? "__has_play__" : null,
+          };
+          const saved = isInList(wlId);
+
+          function handleWlClick(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            toggle(wlItem);
+          }
 
           const inner = (
             <>
+              <button
+                className={`card-wl-btn${saved ? " card-wl-btn--saved" : ""}`}
+                onClick={handleWlClick}
+                aria-label={saved ? "Remove from My List" : "Add to My List"}
+              >
+                <svg viewBox="0 0 24 24" fill={saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+              </button>
               <div className="card-thumb">
+                {isNew && <span className="card-new-badge">NEW</span>}
                 <img
                   src={posterSrc}
                   alt={item.title}

@@ -1,9 +1,37 @@
 .home {
   background: #0D0F18;
   min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* ambient depth glows that give the flat bg dimension */
+.home::before {
+  content: '';
+  position: fixed;
+  top: 30vh;
+  left: -20vw;
+  width: 60vw;
+  height: 60vw;
+  background: radial-gradient(ellipse, rgba(74,111,165,0.06) 0%, transparent 65%);
+  pointer-events: none;
+  z-index: 0;
+}
+.home::after {
+  content: '';
+  position: fixed;
+  top: 60vh;
+  right: -15vw;
+  width: 50vw;
+  height: 50vw;
+  background: radial-gradient(ellipse, rgba(232,160,32,0.04) 0%, transparent 65%);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .home-content {
+  position: relative;
+  z-index: 1;
   padding-top: 52px;
   padding-bottom: 80px;
 }
@@ -34,6 +62,9 @@
   font-size: 22px;
   letter-spacing: 2px;
   color: #E8E6F0;
+  padding-left: 14px;
+  border-left: 3px solid #E8A020;
+  text-shadow: 0 0 40px rgba(232,160,32,0.18);
 }
 
 .home-section-count {
@@ -102,14 +133,15 @@
   width: 154px;
   aspect-ratio: 2/3;
   border-radius: 6px;
-  background: linear-gradient(
-    90deg,
-    #13162A 25%,
-    #1C2038 50%,
-    #13162A 75%
+  background: linear-gradient(105deg,
+    #13162A 0%,
+    #1C2038 35%,
+    rgba(232,160,32,0.05) 50%,
+    #1C2038 65%,
+    #13162A 100%
   );
-  background-size: 200% 100%;
-  animation: home-shimmer 1.5s infinite linear;
+  background-size: 250% 100%;
+  animation: home-shimmer 1.8s infinite ease-in-out;
 }
 @keyframes home-shimmer {
   0%   { background-position: 200% 0; }
@@ -119,8 +151,9 @@
 /* ── DIVIDER ── */
 .home-divider {
   height: 1px;
-  background: rgba(255,255,255,0.05);
+  background: linear-gradient(to right, transparent 0%, rgba(232,160,32,0.18) 30%, rgba(255,255,255,0.07) 50%, rgba(232,160,32,0.18) 70%, transparent 100%);
   margin: 12px 60px 52px;
+  border: none;
 }
 
 /* override row margin when inside .home-section */

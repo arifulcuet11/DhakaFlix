@@ -132,7 +132,11 @@ export default function SeriesDetail({ source = "korean" }) {
 
       {/* ── SCROLLABLE RIGHT PANEL ── */}
       <main className="sd-panel-right">
-        <SeriesBanner series={series} totalEpisodes={totalEpisodes} />
+        <SeriesBanner
+          series={series}
+          totalEpisodes={totalEpisodes}
+          onPlayFirst={() => setPlayingIdx(0)}
+        />
 
         <div className="sd-content">
 
@@ -172,11 +176,9 @@ export default function SeriesDetail({ source = "korean" }) {
                   key={ep.episode}
                   className={`sd-episode${ep.finale ? " sd-finale" : ""}${playingIdx === idx ? " sd-playing" : ""}${watched ? " sd-watched" : ""}`}
                 >
-                  <div className="sd-ep-num">{String(ep.episode).padStart(2, "0")}</div>
-
                   <div className="sd-ep-info">
                     <div className="sd-ep-title-row">
-                      <span className="sd-ep-title">
+                      <span className="sd-ep-title" data-num={String(ep.episode).padStart(2, "0")}>
                         Episode {ep.episode}{ep.finale ? " — Series Finale" : ""}
                       </span>
                       {watched && <span className="sd-ep-badge sd-ep-badge-done">✓ Watched</span>}

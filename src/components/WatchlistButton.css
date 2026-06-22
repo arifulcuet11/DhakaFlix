@@ -1,0 +1,59 @@
+.wl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.08);
+  color: rgba(232,230,240,0.75);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.wl-btn svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  transition: transform 0.25s cubic-bezier(0.34,1.4,0.64,1), color 0.18s ease;
+}
+
+.wl-btn:hover {
+  background: rgba(255,255,255,0.13);
+  border-color: rgba(255,255,255,0.3);
+  color: #fff;
+}
+
+.wl-btn:hover svg { transform: scale(1.2); }
+
+.wl-btn--saved {
+  background: rgba(232,160,32,0.12);
+  border-color: rgba(232,160,32,0.45);
+  color: #E8A020;
+}
+.wl-btn--saved svg { color: #E8A020; }
+
+.wl-btn--saved:hover {
+  background: rgba(220,53,53,0.12);
+  border-color: rgba(220,53,53,0.4);
+  color: #e05555;
+}
+.wl-btn--saved:hover svg { color: #e05555; transform: scale(1.15); }
+
+/* Icon-only variant used on cards */
+.wl-btn--icon {
+  padding: 6px;
+  border-radius: 50%;
+  gap: 0;
+  font-size: 0;
+  width: 30px;
+  height: 30px;
+  justify-content: center;
+}
+.wl-btn--icon svg { width: 14px; height: 14px; }

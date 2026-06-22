@@ -41,6 +41,13 @@
   max-width: 560px;
 }
 
+.pb-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
 .pb-tag {
   display: inline-block;
   background: #E8A020;
@@ -51,7 +58,22 @@
   text-transform: uppercase;
   padding: 3px 9px;
   border-radius: 2px;
-  margin-bottom: 10px;
+}
+
+.pb-new-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #E8A020;
+  border: 1px solid rgba(232,160,32,0.5);
+  padding: 3px 9px;
+  border-radius: 2px;
+  animation: badge-pulse 2.5s ease-in-out infinite;
+}
+@keyframes badge-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
 }
 
 .pb-title {

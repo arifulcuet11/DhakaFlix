@@ -1,13 +1,84 @@
 .footer {
-  border-top: 1px solid #222;
-  padding: 40px;
-  text-align: center;
+  background: linear-gradient(to bottom, #0D0F18 0%, #080A13 100%);
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding: 60px 0 0;
+  margin-top: 40px;
 }
+
+.footer-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 60px 48px;
+  display: flex;
+  gap: 80px;
+  align-items: flex-start;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.footer-brand {
+  flex-shrink: 0;
+}
+
 .footer-logo {
-  font-size: 24px;
-  font-weight: 900;
-  color: var(--red);
+  font-family: 'Bebas Neue', 'Impact', sans-serif;
+  font-size: 36px;
+  letter-spacing: 3px;
+  color: #E8A020;
+  line-height: 1;
   margin-bottom: 8px;
 }
 .footer-logo span { color: #fff; }
-.footer-copy { color: #555; font-size: 13px; }
+
+.footer-tagline {
+  font-size: 12px;
+  color: rgba(138,138,168,0.5);
+  letter-spacing: 0.5px;
+}
+
+.footer-links {
+  display: flex;
+  gap: 60px;
+  flex-wrap: wrap;
+}
+
+.footer-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.footer-col-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #E8A020;
+  margin-bottom: 4px;
+}
+
+.footer-col a {
+  font-size: 13px;
+  color: rgba(232,230,240,0.4);
+  text-decoration: none;
+  transition: color 0.18s ease;
+  letter-spacing: 0.2px;
+}
+.footer-col a:hover { color: rgba(232,230,240,0.85); }
+
+.footer-bottom {
+  padding: 18px 60px;
+  text-align: center;
+}
+
+.footer-copy {
+  font-size: 11px;
+  color: rgba(138,138,168,0.3);
+  letter-spacing: 0.3px;
+}
+
+@media (max-width: 768px) {
+  .footer-inner { padding: 0 20px 40px; flex-direction: column; gap: 40px; }
+  .footer-bottom { padding: 16px 20px; }
+  .footer-links { gap: 40px; }
+}

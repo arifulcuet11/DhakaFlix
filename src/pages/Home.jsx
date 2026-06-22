@@ -12,6 +12,7 @@ import { useSouthMovies } from "../hooks/useSouthMovies";
 import { useDocumentary } from "../hooks/useDocumentary";
 import { useBanglaMovies } from "../hooks/useBanglaMovies";
 import { useContinueWatching } from "../hooks/useContinueWatching";
+import { useWatchlist } from "../hooks/useWatchlist";
 import "./Page.css";
 import "./Home.css";
 
@@ -36,6 +37,7 @@ export default function Home() {
   const [continuePlayingUrl, setContinuePlayingUrl] = useState(null);
 
   const continueWatching = useContinueWatching(koreanSeries, englishSeries);
+  const { list: watchlist } = useWatchlist();
 
   const filteredKorean = useMemo(() => {
     if (activeGenre === "All") return koreanSeries;
@@ -158,6 +160,24 @@ export default function Home() {
                 : null,
               onPlay: () => setContinuePlayingUrl(item.episodeUrl),
             }))}
+          />
+        )}
+
+        {/* ── MY LIST ── */}
+        {watchlist.length > 0 && (
+          <CategoryRow
+            title="My List"
+            items={watchlist.map(item => ({
+              title: item.title,
+              poster: item.poster,
+              tag: item.tag,
+              genre: item.genre,
+              rating: item.rating,
+              seriesId: item.seriesId || null,
+              tvRoute: item.tvRoute || false,
+              url: item.url || null,
+            }))}
+            seeAllUrl="/watchlist"
           />
         )}
 
