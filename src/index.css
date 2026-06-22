@@ -29,3 +29,37 @@ body {
 
 a { color: inherit; text-decoration: none; }
 button { cursor: pointer; border: none; background: none; }
+
+/* ── Button press feel ── */
+button:active,
+a.card:active,
+a.sg-card:active {
+  transform: scale(0.97) !important;
+  transition: transform 0.08s ease !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  button:active, a.card:active, a.sg-card:active { transform: none !important; }
+}
+
+/* ── Scroll-reveal ── */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+}
+
+/* ── Skeleton → content crossfade ── */
+.sg-grid--loaded {
+  animation: grid-appear 0.35s ease both;
+}
+@keyframes grid-appear {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}

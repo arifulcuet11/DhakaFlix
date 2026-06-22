@@ -1,0 +1,16 @@
+.pt-root {
+  opacity: 1;
+}
+
+.pt-root.pt-enter {
+  animation: pt-fade-in 220ms ease both;
+}
+
+@keyframes pt-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pt-root.pt-enter { animation: none; }
+}

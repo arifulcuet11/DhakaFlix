@@ -1,16 +1,18 @@
 import { Link } from "react-router-dom";
 import { useWatchlist } from "../hooks/useWatchlist";
+import { useScrollReveal } from "../hooks/useScrollReveal";
 import "./CategoryRow.css";
 
 export default function CategoryRow({ title, items, seeAllUrl, tvRoute }) {
   const { isInList, toggle } = useWatchlist();
+  const revealRef = useScrollReveal();
   const countMatch = title ? title.match(/\((\d+[^)]*)\)/) : null;
   const cleanTitle = countMatch ? title.replace(/\s*\([^)]*\)/, "").trim() : (title || "");
   const countLabel = countMatch ? countMatch[1] : null;
   const showHeader = cleanTitle.length > 0;
 
   return (
-    <div className="row">
+    <div ref={revealRef} className="row reveal">
       {showHeader && (
         <div className="row-header">
           <h2 className="row-title">{cleanTitle}</h2>
@@ -73,11 +75,10 @@ export default function CategoryRow({ title, items, seeAllUrl, tvRoute }) {
                   alt={item.title}
                   loading="lazy"
                   onError={e => {
-                    // if TMDB image fails try FTP poster, then placeholder
                     if (item.poster && e.target.src !== item.poster) {
                       e.target.src = item.poster;
                     } else {
-                      e.target.style.opacity = "0.3";
+                      e.target.style.opacity = "0.2";
                     }
                   }}
                 />

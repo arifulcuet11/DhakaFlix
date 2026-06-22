@@ -1,12 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import "./Navbar.css";
 
 export default function Navbar({ onSearch }) {
   const [query, setQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [solid, setSolid] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    function onScroll() { setSolid(window.scrollY > 40); }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   function navClass(path, exact = false) {
     if (exact) return location.pathname === path ? "active-link" : "";
@@ -21,7 +28,7 @@ export default function Navbar({ onSearch }) {
   }
 
   return (
-    <nav className="navbar">
+    <nav className={`navbar${solid ? " navbar--solid" : ""}`}>
       <div className="navbar-inner">
         <Link to="/" className="navbar-logo">Dhaka<span>Flix</span></Link>
 

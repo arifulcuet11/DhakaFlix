@@ -132,7 +132,7 @@ export default function SeriesGrid({ series, loading, genres, title, routePrefix
         </div>
       ) : (
         <>
-          <div className="sg-grid">
+          <div className="sg-grid sg-grid--loaded">
             {visible.map((s) => {
               const poster = (s.tmdbPoster || s.poster || "")
                 .replace("/t/p/w500/", "/t/p/w342/");

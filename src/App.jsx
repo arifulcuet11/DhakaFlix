@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import BottomNav from "./components/BottomNav";
+import PageTransition from "./components/PageTransition";
 import Home from "./pages/Home";
 import CategoryPage from "./pages/CategoryPage";
 import Search from "./pages/Search";
@@ -23,6 +24,7 @@ export default function App() {
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Navbar onSearch={setQuery} />
+      <PageTransition>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/:slug" element={<CategoryPage />} />
@@ -39,6 +41,7 @@ export default function App() {
         <Route path="/bangla-movies" element={<BanglaMovies />} />
         <Route path="/watchlist" element={<Watchlist />} />
       </Routes>
+      </PageTransition>
       <Footer />
       <BottomNav />
     </BrowserRouter>
