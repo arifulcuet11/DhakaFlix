@@ -627,6 +627,12 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
               onEnded={onEnded}
             />
 
+            {/* watermark */}
+            <div className="vp-watermark">
+              <div className="vp-watermark-icon">A</div>
+              <span className="vp-watermark-name">Ariful</span>
+            </div>
+
             {/* subtitle overlay */}
             {subLine && (
               <div className="vp-subtitle-overlay">
