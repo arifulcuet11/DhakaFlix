@@ -758,18 +758,13 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
               onEnded={onEnded}
             />
 
-            {/* watermark */}
-            <div className="vp-watermark">
-              <div className="vp-watermark-icon">A</div>
-              <span className="vp-watermark-name">Ariful</span>
-            </div>
 
 {/* speed toast */}
             {speedToast && <div className="vp-speed-toast">{speedToast}</div>}
 
             {/* subtitle overlay */}
             {subLine && (
-              <div className="vp-subtitle-overlay" style={{ fontSize: [14,16,20,26,32][subSize] + "px" }}>
+              <div className="vp-subtitle-overlay" style={{ fontSize: [20,24,30,38,48][subSize] + "px" }}>
                 {subLine.split("\n").map((line, i) => <span key={i}>{line}<br /></span>)}
               </div>
             )}
