@@ -457,15 +457,18 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
 
   // ── double-tap to seek (mobile/touch) ───────────────────────
   function onWrapClick(e) {
+    // close open panels when clicking outside them
+    if (showEps && !e.target.closest(".vp-ep-panel"))      { setShowEps(false); return; }
+    if (showSubPanel && !e.target.closest(".vp-sub-panel")) { setShowSubPanel(false); return; }
     // ignore clicks on controls/header
-    if (e.target.closest(".vp-controls") || e.target.closest(".vp-header") || e.target.closest(".vp-ep-panel")) return;
+    if (e.target.closest(".vp-controls") || e.target.closest(".vp-header")) return;
 
     const rect = wrapRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const third = rect.width / 3;
 
     if (tapTimer.current) {
-      // double tap
+      // double click
       clearTimeout(tapTimer.current);
       tapTimer.current = null;
       if (x < third) {
@@ -473,7 +476,7 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
       } else if (x > rect.width - third) {
         skip(10);
       } else {
-        togglePlay();
+        toggleFullscreen();
       }
     } else {
       tapTimer.current = setTimeout(() => {
@@ -780,6 +783,9 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
 
             {/* ── EPISODE PANEL ── */}
             {showEps && episodes && (
+              <div className="vp-ep-panel-backdrop" onClick={() => setShowEps(false)} />
+            )}
+            {showEps && episodes && (
               <div className="vp-ep-panel" onClick={e => e.stopPropagation()}>
                 <div className="vp-ep-panel-header">
                   <span>Episodes</span>
@@ -806,6 +812,9 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
             )}
 
             {/* ── SUBTITLE PANEL ── */}
+            {showSubPanel && (
+              <div className="vp-ep-panel-backdrop" onClick={() => setShowSubPanel(false)} />
+            )}
             {showSubPanel && (
               <div className="vp-sub-panel" onClick={e => e.stopPropagation()}>
                 <div className="vp-sub-panel-header">

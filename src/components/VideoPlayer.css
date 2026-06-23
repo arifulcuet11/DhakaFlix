@@ -633,6 +633,14 @@
 }
 
 /* ── EPISODE PANEL ── */
+.vp-ep-panel-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  background: rgba(0,0,0,0.45);
+  cursor: pointer;
+}
+
 .vp-ep-panel {
   position: absolute;
   top: 0; right: 0; bottom: 0;
@@ -665,13 +673,18 @@
 .vp-ep-panel-close {
   background: none;
   border: none;
-  color: #8A8AA8;
-  font-size: 16px;
+  color: #E8E6F0;
   cursor: pointer;
-  padding: 4px;
-  transition: color 0.15s;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
 }
-.vp-ep-panel-close:hover { color: #E8E6F0; }
+.vp-ep-panel-close svg { width: 18px; height: 18px; display: block; }
+.vp-ep-panel-close:hover { color: #E8A020; background: rgba(232,160,32,0.12); }
 
 .vp-ep-list {
   overflow-y: auto;
@@ -1027,15 +1040,29 @@
 
 /* ── CINEMATIC MODE ── */
 .vp-cinematic-dim {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.88);
-  z-index: 998;
-  animation: vp-in 0.3s ease;
+  display: none;
 }
 .vp-overlay.vp-cinematic {
-  background: transparent;
-  z-index: 999;
+  background: #000;
+  backdrop-filter: none;
+  padding: 0;
+  align-items: stretch;
+  justify-content: stretch;
+}
+.vp-overlay.vp-cinematic .vp-modal {
+  width: 100vw;
+  max-width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+  animation: none;
+}
+.vp-overlay.vp-cinematic .vp-wrap {
+  flex: 1;
+}
+.vp-overlay.vp-cinematic .vp-video {
+  max-height: 100vh;
 }
 
 /* ── RESPONSIVE ── */
