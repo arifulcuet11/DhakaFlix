@@ -36,7 +36,7 @@ export default function Home() {
   const [playingMovie, setPlayingMovie] = useState(null);
   const [continuePlayingUrl, setContinuePlayingUrl] = useState(null);
 
-  const { items: continueWatching, remove: removeContinue } = useContinueWatching(koreanSeries, englishSeries);
+  const { items: continueWatching, remove: removeContinue } = useContinueWatching(koreanSeries, englishSeries, englishMovies, banglaMovies, foreignMovies, animationMovies, southMovies, documentaries);
   const { list: watchlist } = useWatchlist();
 
   const filteredKorean = useMemo(() => {
@@ -138,7 +138,8 @@ export default function Home() {
           subtitle={(() => {
             const item = continueWatching.find(i => i.displayUrl === continuePlayingUrl);
             if (!item) return "";
-            return `S${item.season} · E${item.episodeNum}`;
+            if (item.season != null && item.episodeNum != null) return `S${item.season} · E${item.episodeNum}`;
+            return "";
           })()}
           onClose={() => setContinuePlayingUrl(null)}
         />
