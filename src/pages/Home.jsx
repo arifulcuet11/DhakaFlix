@@ -131,19 +131,28 @@ export default function Home() {
           onClose={() => setPlayingDoc(null)}
         />
       )}
-      {continuePlayingUrl && (
-        <VideoPlayer
-          src={continuePlayingUrl}
-          title={continueWatching.find(i => i.displayUrl === continuePlayingUrl)?.title || ""}
-          subtitle={(() => {
-            const item = continueWatching.find(i => i.displayUrl === continuePlayingUrl);
-            if (!item) return "";
-            if (item.season != null && item.episodeNum != null) return `S${item.season} · E${item.episodeNum}`;
-            return "";
-          })()}
-          onClose={() => setContinuePlayingUrl(null)}
-        />
-      )}
+      {continuePlayingUrl && (() => {
+        const item = continueWatching.find(i => i.displayUrl === continuePlayingUrl);
+        const isSeriesSource = item && (item.source === "korean" || item.source === "english");
+        const allSeries = item?.source === "korean" ? koreanSeries : englishSeries;
+        const series = isSeriesSource ? allSeries.find(s => s.id === item.seriesId) : null;
+        const season = series?.seasons?.find(s => s.season === item?.season);
+        const episodeList = season ? season.episodes.map(ep => ({ ...ep, url: season.folderUrl + encodeURIComponent(ep.filename) })) : null;
+        const currentEpIdx = episodeList ? episodeList.findIndex(e => e.url === continuePlayingUrl) : -1;
+        return (
+          <VideoPlayer
+            src={continuePlayingUrl}
+            title={item?.title || ""}
+            subtitle={item?.season != null && item?.episodeNum != null ? `S${item.season} · E${item.episodeNum}` : ""}
+            onClose={() => setContinuePlayingUrl(null)}
+            episodes={episodeList || undefined}
+            currentEpIdx={currentEpIdx >= 0 ? currentEpIdx : undefined}
+            onPrev={currentEpIdx > 0 ? () => setContinuePlayingUrl(episodeList[currentEpIdx - 1].url) : null}
+            onNext={episodeList && currentEpIdx < episodeList.length - 1 ? () => setContinuePlayingUrl(episodeList[currentEpIdx + 1].url) : null}
+            onJumpTo={episodeList ? idx => setContinuePlayingUrl(episodeList[idx].url) : undefined}
+          />
+        );
+      })()}
       <Hero />
 
       <div className="home-content">
