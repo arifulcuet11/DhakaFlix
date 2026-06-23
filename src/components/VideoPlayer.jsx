@@ -218,8 +218,6 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
   const [thumbDataUrl,   setThumbDataUrl]   = useState(null);
   const [skipRipple,     setSkipRipple]     = useState(null); // {dir, key}
   const [glowColor,      setGlowColor]      = useState("74,111,165");
-  const [showSkipIntro,  setShowSkipIntro]  = useState(false);
-  const [skipIntroEnd,   setSkipIntroEnd]   = useState(null);
   const [speedToast,     setSpeedToast]     = useState(null);
   const [subSize,        setSubSize]        = useState(() => loadSubSize());
   const speedToastTimer = useRef(null);
@@ -410,12 +408,6 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
     const t = v.currentTime;
     setCurrent(t);
     if (v.buffered.length > 0) setBuffered(v.buffered.end(v.buffered.length - 1));
-    // skip intro window: 30s–3.5min
-    if (t >= 30 && t <= 210) {
-      setShowSkipIntro(true);
-    } else {
-      setShowSkipIntro(false);
-    }
   }
   function onDurationChange() {
     if (videoRef.current) {
@@ -772,20 +764,7 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
               <span className="vp-watermark-name">Ariful</span>
             </div>
 
-            {/* skip intro button */}
-            {showSkipIntro && !endOverlay && (
-              <button
-                className="vp-skip-intro-btn"
-                onClick={() => {
-                  const v = videoRef.current;
-                  if (!v) return;
-                  v.currentTime = skipIntroEnd !== null ? skipIntroEnd : Math.min(v.duration || 0, v.currentTime + 85);
-                  setShowSkipIntro(false);
-                }}
-              >Skip Intro →</button>
-            )}
-
-            {/* speed toast */}
+{/* speed toast */}
             {speedToast && <div className="vp-speed-toast">{speedToast}</div>}
 
             {/* subtitle overlay */}
