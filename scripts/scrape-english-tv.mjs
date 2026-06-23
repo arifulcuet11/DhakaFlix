@@ -17,9 +17,9 @@
  *           Episode.S01E01.mkv …
  */
 
-import { writeFileSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
+import { mergeAndWrite } from "./merge-enrichment.mjs";
 
 const __dir    = dirname(fileURLToPath(import.meta.url));
 const BASE_URL = "http://172.16.50.12";
@@ -254,7 +254,7 @@ async function main() {
   console.log(`\n\nDone. ${results.length} series scraped.`);
   results.sort((a, b) => a.title.localeCompare(b.title));
 
-  writeFileSync(OUT_FILE, JSON.stringify(results, null, 2), "utf8");
+  mergeAndWrite(OUT_FILE, results);
   console.log(`Written → ${OUT_FILE}`);
 }
 

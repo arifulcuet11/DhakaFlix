@@ -3,9 +3,9 @@
  * Usage: node scripts/scrape-animation-movies.mjs
  */
 
-import { writeFileSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
+import { mergeAndWrite } from "./merge-enrichment.mjs";
 
 const __dir    = dirname(fileURLToPath(import.meta.url));
 const BASE_URL = "http://172.16.50.14";
@@ -143,7 +143,7 @@ async function main() {
   console.log(`\n\nDone. ${allMovies.length} animation movies scraped.`);
   allMovies.sort((a, b) => a.title.localeCompare(b.title));
 
-  writeFileSync(OUT_FILE, JSON.stringify(allMovies, null, 2), "utf8");
+  mergeAndWrite(OUT_FILE, allMovies);
   console.log(`Written → ${OUT_FILE}`);
 }
 

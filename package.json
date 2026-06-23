@@ -8,6 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "sync": "node scripts/sync-and-build.mjs",
     "deploy": "npm run build && npx gh-pages -d dist"
   },
   "dependencies": {

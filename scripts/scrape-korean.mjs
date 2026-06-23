@@ -5,14 +5,14 @@
  * Usage: node scripts/scrape-korean.mjs
  */
 
-import { writeFileSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
+import { mergeAndWrite } from "./merge-enrichment.mjs";
 
 const __dir    = dirname(fileURLToPath(import.meta.url));
 const BASE_URL = "http://172.16.50.14";
 const CAT_PATH = "/DHAKA-FLIX-14/KOREAN%20TV%20%26%20WEB%20Series/";
-const OUT_FILE = resolve(__dir, "../src/data/korean-series.json");
+const OUT_FILE = resolve(__dir, "../public/korean-series.json");
 
 const CONCURRENCY = 8; // parallel series fetches
 const SEASON_CONCURRENCY = 4; // parallel season fetches per series
@@ -213,7 +213,7 @@ async function main() {
   // sort alphabetically by title
   results.sort((a, b) => a.title.localeCompare(b.title));
 
-  writeFileSync(OUT_FILE, JSON.stringify(results, null, 2), "utf8");
+  mergeAndWrite(OUT_FILE, results);
   console.log(`Written → ${OUT_FILE}`);
 }
 

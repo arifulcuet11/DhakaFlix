@@ -3,9 +3,9 @@
  * Usage: node scripts/scrape-english-movies.mjs
  */
 
-import { writeFileSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
+import { mergeAndWrite } from "./merge-enrichment.mjs";
 
 const __dir  = dirname(fileURLToPath(import.meta.url));
 const OUT    = resolve(__dir, "../public/english-movies.json");
@@ -164,7 +164,7 @@ async function main() {
   });
 
   deduped.sort((a, b) => a.title.localeCompare(b.title));
-  writeFileSync(OUT, JSON.stringify(deduped, null, 2), "utf8");
+  mergeAndWrite(OUT, deduped);
   console.log(`\nDone. ${deduped.length} English movies → ${OUT}`);
 }
 

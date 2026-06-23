@@ -258,7 +258,7 @@ export default function Home() {
           <CategoryRow
             title="IMDb Top 250"
             items={englishMovies
-              .filter(m => m.source === "IMDb Top 250" && m.rating)
+              .filter(m => m.source === "IMDb Top 250")
               .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
               .slice(0, 20)
               .map(m => ({
@@ -279,7 +279,6 @@ export default function Home() {
           <CategoryRow
             title="English Movies"
             items={englishMovies
-              .filter(m => m.rating && m.voteCount > 100)
               .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
               .slice(0, 20)
               .map(m => ({
@@ -300,7 +299,7 @@ export default function Home() {
           <CategoryRow
             title="Hindi Movies"
             items={southMovies
-              .filter(m => m.source === "Hindi Movies" && m.rating)
+              .filter(m => m.source === "Hindi Movies")
               .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
               .slice(0, 20)
               .map(m => ({
@@ -321,7 +320,7 @@ export default function Home() {
           <CategoryRow
             title="South Indian Movies"
             items={southMovies
-              .filter(m => m.source !== "Hindi Movies" && m.rating)
+              .filter(m => m.source !== "Hindi Movies")
               .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
               .slice(0, 20)
               .map(m => ({
@@ -342,8 +341,7 @@ export default function Home() {
           <CategoryRow
             title="Foreign Language Movies"
             items={foreignMovies
-              .filter(m => m.rating && m.voteCount > 50)
-              .sort((a, b) => b.rating - a.rating)
+              .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
               .slice(0, 20)
               .map(m => ({
                 title: m.title,
@@ -363,8 +361,7 @@ export default function Home() {
           <CategoryRow
             title="Animation Movies"
             items={animationMovies
-              .filter(m => m.rating && m.voteCount > 50)
-              .sort((a, b) => b.rating - a.rating)
+              .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
               .slice(0, 20)
               .map(m => ({
                 title: m.title,
@@ -384,7 +381,6 @@ export default function Home() {
           <CategoryRow
             title="Documentary"
             items={documentaries
-              .filter(m => m.rating && m.voteCount > 50)
               .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
               .slice(0, 20)
               .map(m => ({
@@ -405,7 +401,6 @@ export default function Home() {
           <CategoryRow
             title="Kolkata Bangla Movies"
             items={banglaMovies
-              .filter(m => m.rating && m.voteCount > 50)
               .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
               .slice(0, 20)
               .map(m => ({

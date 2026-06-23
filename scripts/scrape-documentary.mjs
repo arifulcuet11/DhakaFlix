@@ -3,9 +3,9 @@
  * Usage: node scripts/scrape-documentary.mjs
  */
 
-import { writeFileSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
+import { mergeAndWrite } from "./merge-enrichment.mjs";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const OUT   = resolve(__dir, "../public/documentary.json");
@@ -111,7 +111,7 @@ async function main() {
   }
 
   all.sort((a, b) => a.title.localeCompare(b.title));
-  writeFileSync(OUT, JSON.stringify(all, null, 2), "utf8");
+  mergeAndWrite(OUT, all);
   console.log(`\nDone. ${all.length} documentaries → ${OUT}`);
 }
 
