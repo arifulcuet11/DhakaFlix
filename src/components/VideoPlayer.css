@@ -1105,3 +1105,113 @@
   .vp-controls, .vp-header { transition: none !important; }
   .vp-skip-flash, .vp-toast { animation: none !important; }
 }
+
+/* ── SKIP INTRO BUTTON ── */
+.vp-skip-intro-btn {
+  position: absolute;
+  bottom: 80px;
+  left: 20px;
+  background: #E8A020;
+  color: #0D0F18;
+  border: none;
+  padding: 8px 18px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  border-radius: 4px;
+  cursor: pointer;
+  z-index: 6;
+  animation: vp-slide-up 0.25s ease;
+  letter-spacing: 0.3px;
+}
+@keyframes vp-slide-up {
+  from { transform: translateY(10px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ── SPEED TOAST ── */
+.vp-speed-toast {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(13,15,24,0.85);
+  color: #E8A020;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 28px;
+  font-weight: 700;
+  padding: 8px 20px;
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 9;
+  animation: vp-toast-fade 1.5s ease forwards;
+}
+@keyframes vp-toast-fade {
+  0%   { opacity: 1; }
+  60%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ── HELP OVERLAY ── */
+.vp-help-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(13,15,24,0.92);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: vp-in 0.18s ease;
+}
+.vp-help-box {
+  background: #13162A;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 28px 36px;
+  min-width: 320px;
+}
+.vp-help-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 2px;
+  color: #E8A020;
+  margin-bottom: 20px;
+}
+.vp-help-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px 24px;
+}
+.vp-help-key {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: #E8A020;
+  background: rgba(232,160,32,0.1);
+  border: 1px solid rgba(232,160,32,0.25);
+  border-radius: 4px;
+  padding: 2px 8px;
+  white-space: nowrap;
+  text-align: center;
+}
+.vp-help-desc {
+  font-size: 13px;
+  color: #E8E6F0;
+  display: flex;
+  align-items: center;
+}
+
+/* ── SUBTITLE SIZE BUTTONS ── */
+.vp-sub-size-btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(232,230,240,0.7);
+  cursor: pointer;
+  padding: 5px 8px;
+  border-radius: 5px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.05);
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.vp-sub-size-btn:hover { background: rgba(255,255,255,0.1); color: #E8A020; }

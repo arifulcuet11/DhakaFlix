@@ -125,6 +125,9 @@ const SPEEDS   = [0.5, 0.75, 1, 1.25, 1.5, 2];
 const STORAGE  = "dhakaflix_progress";
 const DURATION_STORAGE = "dhakaflix_duration";
 const VOLUME_STORAGE   = "dhakaflix_volume";
+const SPEED_STORAGE    = "dhakaflix_speed";
+const SUB_LANG_STORAGE = "dhakaflix_sub_lang";
+const SUB_SIZE_STORAGE = "dhakaflix_sub_size";
 
 const WATCHED_AT = "dhakaflix_watched_at";
 
@@ -157,6 +160,17 @@ function loadVolume() {
 function persistVolume(v) {
   try { localStorage.setItem(VOLUME_STORAGE, String(v)); } catch {}
 }
+function loadSpeed() {
+  try { return parseFloat(localStorage.getItem(SPEED_STORAGE)) || 1; }
+  catch { return 1; }
+}
+function persistSpeed(s) {
+  try { localStorage.setItem(SPEED_STORAGE, String(s)); } catch {}
+}
+function loadSubSize() {
+  try { const v = parseInt(localStorage.getItem(SUB_SIZE_STORAGE)); return isNaN(v) ? 2 : Math.max(0, Math.min(4, v)); }
+  catch { return 2; }
+}
 
 // episodes: [{episode, filename, finale, url}]  optional — for episode panel
 export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, episodeNum, poster, onClose, onNext, onPrev, episodes, currentEpIdx, onJumpTo }) {
@@ -181,7 +195,7 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
   const [fullscreen, setFullscreen] = useState(false);
   const [showCtrl,   setShowCtrl]   = useState(true);
   const [waiting,    setWaiting]    = useState(true);
-  const [speed,      setSpeed]      = useState(1);
+  const [speed,      setSpeed]      = useState(() => loadSpeed());
   const [showSpeed,  setShowSpeed]  = useState(false);
   const [skipFlash,  setSkipFlash]  = useState(null);
   const [endOverlay, setEndOverlay] = useState(false);
@@ -193,18 +207,23 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
   const [subLine,    setSubLine]    = useState("");     // current subtitle text
   const [seekTooltip, setSeekTooltip] = useState(null); // {x, time}
   const [seekDrag,    setSeekDrag]    = useState(null); // ratio while dragging (visual only)
-  const [cinematic,  setCinematic]  = useState(false);
   const [showSubPanel, setShowSubPanel] = useState(false);
   const [subResults,   setSubResults]   = useState([]);
   const [subLoading,   setSubLoading]   = useState(false);
   const [subError,     setSubError]     = useState("");
   const [subDownloading, setSubDownloading] = useState(null);
-  const [subLangFilter,  setSubLangFilter]  = useState("en");
+  const [subLangFilter,  setSubLangFilter]  = useState(() => { try { return localStorage.getItem(SUB_LANG_STORAGE) || "en"; } catch { return "en"; } });
   const [osKey,          setOsKey]          = useState(OS_API_KEY);
   const [showKeyInput,   setShowKeyInput]   = useState(false); // unused with hardcoded key
   const [thumbDataUrl,   setThumbDataUrl]   = useState(null);
   const [skipRipple,     setSkipRipple]     = useState(null); // {dir, key}
   const [glowColor,      setGlowColor]      = useState("74,111,165");
+  const [showSkipIntro,  setShowSkipIntro]  = useState(false);
+  const [skipIntroEnd,   setSkipIntroEnd]   = useState(null);
+  const [speedToast,     setSpeedToast]     = useState(null);
+  const [subSize,        setSubSize]        = useState(() => loadSubSize());
+  const speedToastTimer = useRef(null);
+  const glowTimer       = useRef(null);
 
   // ── ambient glow from poster ────────────────────────────────
   useEffect(() => {
@@ -227,6 +246,28 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
     };
     img.src = poster;
   }, [poster]);
+
+  // ── real-time ambient glow from video frames ────────────────
+  useEffect(() => {
+    if (!playing || waiting) { clearInterval(glowTimer.current); return; }
+    glowTimer.current = setInterval(() => {
+      const v = videoRef.current;
+      if (!v) return;
+      try {
+        const c = document.createElement("canvas");
+        c.width = 8; c.height = 8;
+        const ctx = c.getContext("2d");
+        ctx.drawImage(v, 0, 0, 8, 8);
+        const d = ctx.getImageData(0, 0, 8, 8).data;
+        let r = 0, g = 0, b = 0;
+        for (let i = 0; i < d.length; i += 4) { r += d[i]; g += d[i+1]; b += d[i+2]; }
+        const n = d.length / 4;
+        const boost = 1.4;
+        setGlowColor(`${Math.min(255,Math.round(r/n*boost))},${Math.min(255,Math.round(g/n*boost))},${Math.min(255,Math.round(b/n*boost))}`);
+      } catch {}
+    }, 3000);
+    return () => clearInterval(glowTimer.current);
+  }, [playing, waiting]);
 
   // ── thumbnail seek preview ───────────────────────────────────
   function updateThumb(time) {
@@ -251,17 +292,8 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
   // ── body scroll lock ────────────────────────────────────────
   useEffect(() => {
     document.body.style.overflow = "hidden";
-    if (cinematic) document.body.classList.add("vp-cinematic-bg");
-    return () => {
-      document.body.style.overflow = "";
-      document.body.classList.remove("vp-cinematic-bg");
-    };
-  }, [cinematic]);
-
-  useEffect(() => {
-    if (cinematic) document.body.classList.add("vp-cinematic-bg");
-    else document.body.classList.remove("vp-cinematic-bg");
-  }, [cinematic]);
+    return () => { document.body.style.overflow = ""; };
+  }, []);
 
   // ── auto-play + resume on src change ───────────────────────
   useEffect(() => {
@@ -350,7 +382,6 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
         case "f": case "F": e.preventDefault(); toggleFullscreen(); break;
         case "m": case "M": e.preventDefault(); v.muted = !v.muted; setMuted(v.muted); break;
         case "p": case "P": e.preventDefault(); togglePip(); break;
-        case "c": case "C": e.preventDefault(); setCinematic(x => !x); break;
         case "e": case "E": e.preventDefault(); setShowEps(x => !x); break;
         case "ArrowLeft":
           e.preventDefault();
@@ -376,8 +407,15 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
   function onTimeUpdate() {
     const v = videoRef.current;
     if (!v) return;
-    setCurrent(v.currentTime);
+    const t = v.currentTime;
+    setCurrent(t);
     if (v.buffered.length > 0) setBuffered(v.buffered.end(v.buffered.length - 1));
+    // skip intro window: 30s–3.5min
+    if (t >= 30 && t <= 210) {
+      setShowSkipIntro(true);
+    } else {
+      setShowSkipIntro(false);
+    }
   }
   function onDurationChange() {
     if (videoRef.current) {
@@ -510,6 +548,10 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
     const v = videoRef.current;
     if (v) v.playbackRate = s;
     setSpeed(s); setShowSpeed(false);
+    persistSpeed(s);
+    setSpeedToast(s === 1 ? "Normal" : s + "×");
+    clearTimeout(speedToastTimer.current);
+    speedToastTimer.current = setTimeout(() => setSpeedToast(null), 1500);
   }
   function skip(sec) {
     const v = videoRef.current;
@@ -522,6 +564,13 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
     setTimeout(() => setSkipRipple(null), 700);
     revealControls();
   }
+
+  // ── subtitle language (persisted) ──────────────────────────
+  function setSubLang(lang) {
+    setSubLangFilter(lang);
+    try { localStorage.setItem(SUB_LANG_STORAGE, lang); } catch {}
+  }
+
 
   // ── touch swipe seeking ─────────────────────────────────────
   function onTouchStart(e) {
@@ -537,8 +586,19 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
     touchStartX.current = null;
     touchStartY.current = null;
 
-    // ignore if predominantly vertical (scroll)
-    if (Math.abs(deltaY) > Math.abs(deltaX)) return;
+    // vertical swipe → volume control
+    if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 50) {
+      const v = videoRef.current;
+      if (!v) return;
+      const delta = Math.abs(deltaY) / 200;
+      const newVol = deltaY < 0
+        ? Math.min(1, v.volume + delta)
+        : Math.max(0, v.volume - delta);
+      v.volume = newVol;
+      setVolume(newVol);
+      persistVolume(newVol);
+      return;
+    }
     // require at least 50px horizontal swipe
     if (Math.abs(deltaX) < 50) return;
 
@@ -641,9 +701,6 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
 
   return (
     <>
-      {/* cinematic page dim */}
-      {cinematic && <div className="vp-cinematic-dim" onClick={onClose} />}
-
       {/* hidden thumbnail video — no crossOrigin, FTP has no CORS */}
       <video
         ref={thumbVideoRef}
@@ -664,7 +721,7 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
       />
 
       <div
-        className={`vp-overlay${cinematic ? " vp-cinematic" : ""}`}
+        className="vp-overlay"
         style={{ "--glow": glowColor }}
       >
         <div className="vp-modal vp-modal--glow">
@@ -715,9 +772,25 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
               <span className="vp-watermark-name">Ariful</span>
             </div>
 
+            {/* skip intro button */}
+            {showSkipIntro && !endOverlay && (
+              <button
+                className="vp-skip-intro-btn"
+                onClick={() => {
+                  const v = videoRef.current;
+                  if (!v) return;
+                  v.currentTime = skipIntroEnd !== null ? skipIntroEnd : Math.min(v.duration || 0, v.currentTime + 85);
+                  setShowSkipIntro(false);
+                }}
+              >Skip Intro →</button>
+            )}
+
+            {/* speed toast */}
+            {speedToast && <div className="vp-speed-toast">{speedToast}</div>}
+
             {/* subtitle overlay */}
             {subLine && (
-              <div className="vp-subtitle-overlay">
+              <div className="vp-subtitle-overlay" style={{ fontSize: [14,16,20,26,32][subSize] + "px" }}>
                 {subLine.split("\n").map((line, i) => <span key={i}>{line}<br /></span>)}
               </div>
             )}
@@ -823,6 +896,8 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
                     Subtitles
                   </span>
                   <div className="vp-sub-panel-actions">
+                    <button className="vp-sub-size-btn" title="Smaller subtitles" onClick={() => { const v = Math.max(0, subSize - 1); setSubSize(v); try { localStorage.setItem(SUB_SIZE_STORAGE, v); } catch {} }}>A-</button>
+                    <button className="vp-sub-size-btn" title="Larger subtitles"  onClick={() => { const v = Math.min(4, subSize + 1); setSubSize(v); try { localStorage.setItem(SUB_SIZE_STORAGE, v); } catch {} }}>A+</button>
                     <label className="vp-sub-upload-btn" title="Upload subtitle file">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                       Upload file
@@ -844,13 +919,13 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
                   <div className="vp-sub-lang-bar">
                     <button
                       className={`vp-sub-lang-btn${subLangFilter === "all" ? " active" : ""}`}
-                      onClick={() => setSubLangFilter("all")}
+                      onClick={() => setSubLang("all")}
                     >All <span className="vp-sub-lang-count">{subResults.length}</span></button>
                     {subLangs.map(l => (
                       <button
                         key={l}
                         className={`vp-sub-lang-btn${subLangFilter === l ? " active" : ""}`}
-                        onClick={() => setSubLangFilter(l)}
+                        onClick={() => setSubLang(l)}
                       >
                         {LANG_FLAGS[l] || "🌐"} {LANG_NAMES[l] || l.toUpperCase()}
                         <span className="vp-sub-lang-count">{subLangCounts[l]}</span>
@@ -875,7 +950,7 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
                   {!subLoading && !subError && filteredSubs.length === 0 && subResults.length > 0 && (
                     <div className="vp-sub-state">
                       No {LANG_NAMES[subLangFilter] || subLangFilter} subtitles found.
-                      <button className="vp-sub-retry" onClick={() => setSubLangFilter("all")}>Show all languages</button>
+                      <button className="vp-sub-retry" onClick={() => setSubLang("all")}>Show all languages</button>
                     </div>
                   )}
                   {filteredSubs.map(item => (
@@ -1003,14 +1078,6 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
                     >
                       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM4 12h4v2H4v-2zm10 6H4v-2h10v2zm6 0h-4v-2h4v2zm0-4H10v-2h10v2z"/></svg>
                       {subs.length > 0 && <span className="vp-cc-dot" />}
-                    </button>
-
-                    <button
-                      className={`vp-btn vp-btn-cinema${cinematic ? " active" : ""}`}
-                      onClick={e => { e.stopPropagation(); setCinematic(v => !v); }}
-                      title="Cinematic mode (C)"
-                    >
-                      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 3v2h-2V3H8v2H6V3H4v18h2v-2h2v2h8v-2h2v2h2V3h-2zM8 17H6v-2h2v2zm0-4H6v-2h2v2zm0-4H6V7h2v2zm10 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2z"/></svg>
                     </button>
 
                     {pipSupported && (
