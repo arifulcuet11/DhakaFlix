@@ -721,7 +721,7 @@ export default function VideoPlayer({ src, title, subtitle, tmdbId, seasonNum, e
           {/* ── VIDEO WRAP ── */}
           <div
             ref={wrapRef}
-            className={`vp-wrap${fullscreen ? " vp-fullscreen" : ""}`}
+            className={`vp-wrap${fullscreen ? " vp-fullscreen" : ""}${!showCtrl ? " vp-cursor-hidden" : ""}`}
             onMouseMove={revealControls}
             onClick={onWrapClick}
             onTouchStart={onTouchStart}
