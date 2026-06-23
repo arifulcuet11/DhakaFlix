@@ -126,11 +126,16 @@ const STORAGE  = "dhakaflix_progress";
 const DURATION_STORAGE = "dhakaflix_duration";
 const VOLUME_STORAGE   = "dhakaflix_volume";
 
+const WATCHED_AT = "dhakaflix_watched_at";
+
 function saveProgress(src, time) {
   try {
-    const all = JSON.parse(localStorage.getItem(STORAGE) || "{}");
-    all[src] = time;
-    localStorage.setItem(STORAGE, JSON.stringify(all));
+    const all     = JSON.parse(localStorage.getItem(STORAGE)    || "{}");
+    const watched = JSON.parse(localStorage.getItem(WATCHED_AT) || "{}");
+    all[src]     = time;
+    watched[src] = Date.now();
+    localStorage.setItem(STORAGE,    JSON.stringify(all));
+    localStorage.setItem(WATCHED_AT, JSON.stringify(watched));
     window.dispatchEvent(new Event("dhakaflix_progress_updated"));
   } catch {}
 }

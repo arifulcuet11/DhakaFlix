@@ -36,7 +36,7 @@ export default function Home() {
   const [playingMovie, setPlayingMovie] = useState(null);
   const [continuePlayingUrl, setContinuePlayingUrl] = useState(null);
 
-  const continueWatching = useContinueWatching(koreanSeries, englishSeries);
+  const { items: continueWatching, remove: removeContinue } = useContinueWatching(koreanSeries, englishSeries);
   const { list: watchlist } = useWatchlist();
 
   const filteredKorean = useMemo(() => {
@@ -134,9 +134,9 @@ export default function Home() {
       {continuePlayingUrl && (
         <VideoPlayer
           src={continuePlayingUrl}
-          title={continueWatching.find(i => i.episodeUrl === continuePlayingUrl)?.title || ""}
+          title={continueWatching.find(i => i.displayUrl === continuePlayingUrl)?.title || ""}
           subtitle={(() => {
-            const item = continueWatching.find(i => i.episodeUrl === continuePlayingUrl);
+            const item = continueWatching.find(i => i.displayUrl === continuePlayingUrl);
             if (!item) return "";
             return `S${item.season} · E${item.episodeNum}`;
           })()}
@@ -153,12 +153,17 @@ export default function Home() {
             title="Continue Watching"
             items={continueWatching.slice(0, 20).map(item => ({
               title: item.title,
-              tag: `S${item.season} · E${item.episodeNum}`,
+              tag: item.isFinished
+                ? `Next · S${item.season} E${item.episodeNum}`
+                : `S${item.season} · E${item.episodeNum}`,
               poster: item.poster,
-              progressPct: item.duration
-                ? Math.min(99, Math.round((item.progress / item.duration) * 100))
-                : null,
-              onPlay: () => setContinuePlayingUrl(item.episodeUrl),
+              progressPct: item.isFinished
+                ? null
+                : (item.duration ? Math.min(99, Math.round((item.progress / item.duration) * 100)) : null),
+              timeLeft: item.timeLeft,
+              isFinished: item.isFinished,
+              onPlay: () => setContinuePlayingUrl(item.displayUrl),
+              onRemove: () => removeContinue(item.episodeUrl),
             }))}
           />
         )}

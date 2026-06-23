@@ -57,19 +57,17 @@ export default function CategoryRow({ title, items, seeAllUrl, tvRoute }) {
             toggle(wlItem);
           }
 
-          const inner = (
+          function handleRemoveClick(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            item.onRemove();
+          }
+
+          const cardInner = (
             <>
-              <button
-                className={`card-wl-btn${saved ? " card-wl-btn--saved" : ""}`}
-                onClick={handleWlClick}
-                aria-label={saved ? "Remove from My List" : "Add to My List"}
-              >
-                <svg viewBox="0 0 24 24" fill={saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                </svg>
-              </button>
               <div className="card-thumb">
-                {isNew && <span className="card-new-badge">NEW</span>}
+                {item.isFinished && <span className="card-next-badge">NEXT</span>}
+                {!item.isFinished && isNew && <span className="card-new-badge">NEW</span>}
                 <img
                   src={posterSrc}
                   alt={item.title}
@@ -101,9 +99,34 @@ export default function CategoryRow({ title, items, seeAllUrl, tvRoute }) {
               </div>
               <div className="card-body">
                 <div className="card-title">{item.title}</div>
-                <div className="card-meta">{genreLabel || yearLabel}</div>
+                <div className="card-meta">
+                  {item.timeLeft
+                    ? <span className="card-time-left">{item.timeLeft}</span>
+                    : (genreLabel || yearLabel)
+                  }
+                </div>
               </div>
             </>
+          );
+
+          // Action button (heart or remove) rendered as sibling outside the anchor
+          const actionBtn = item.onRemove ? (
+            <button
+              className="card-remove-btn"
+              onClick={handleRemoveClick}
+              aria-label="Remove from Continue Watching"
+              title="Remove"
+            >✕</button>
+          ) : (
+            <button
+              className={`card-wl-btn${saved ? " card-wl-btn--saved" : ""}`}
+              onClick={handleWlClick}
+              aria-label={saved ? "Remove from My List" : "Add to My List"}
+            >
+              <svg viewBox="0 0 24 24" fill={saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
+            </button>
           );
 
           if (item.onPlay) {
@@ -114,7 +137,8 @@ export default function CategoryRow({ title, items, seeAllUrl, tvRoute }) {
                 style={{ "--accent": "#E8A020", cursor: "pointer" }}
                 onClick={item.onPlay}
               >
-                {inner}
+                {actionBtn}
+                {cardInner}
               </div>
             );
           }
@@ -124,28 +148,27 @@ export default function CategoryRow({ title, items, seeAllUrl, tvRoute }) {
               ? `/tv/${item.seriesId}`
               : `/series/${item.seriesId}`;
             return (
-              <Link
-                key={i}
-                to={route}
-                className="card"
-                style={{ "--accent": "#E8A020" }}
-              >
-                {inner}
-              </Link>
+              <div key={i} className="card" style={{ "--accent": "#E8A020" }}>
+                {actionBtn}
+                <Link to={route} className="card-link">
+                  {cardInner}
+                </Link>
+              </div>
             );
           }
 
           return (
-            <a
-              key={i}
-              href={item.url}
-              target="_blank"
-              rel="noreferrer"
-              className="card"
-              style={{ "--accent": "#E8A020" }}
-            >
-              {inner}
-            </a>
+            <div key={i} className="card" style={{ "--accent": "#E8A020" }}>
+              {actionBtn}
+              <a
+                href={item.url}
+                target="_blank"
+                rel="noreferrer"
+                className="card-link"
+              >
+                {cardInner}
+              </a>
+            </div>
           );
         })}
       </div>
