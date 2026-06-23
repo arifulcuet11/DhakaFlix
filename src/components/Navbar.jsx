@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import "./Navbar.css";
 
-export default function Navbar({ onSearch }) {
-  const [query, setQuery] = useState("");
+export default function Navbar({ onOpenSearch }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [solid, setSolid] = useState(false);
-  const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
@@ -15,16 +13,12 @@ export default function Navbar({ onSearch }) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // close mobile menu on route change
+  useEffect(() => { setMenuOpen(false); }, [location.pathname]);
+
   function navClass(path, exact = false) {
     if (exact) return location.pathname === path ? "active-link" : "";
     return location.pathname.startsWith(path) ? "active-link" : "";
-  }
-
-  function handleSearch(e) {
-    const val = e.target.value;
-    setQuery(val);
-    if (onSearch) onSearch(val);
-    if (val.trim()) navigate("/search");
   }
 
   return (
@@ -32,7 +26,7 @@ export default function Navbar({ onSearch }) {
       <div className="navbar-inner">
         <Link to="/" className="navbar-logo">Dhaka<span>Flix</span></Link>
 
-        <button className="navbar-burger" onClick={() => setMenuOpen(m => !m)}>
+        <button className="navbar-burger" onClick={() => setMenuOpen(m => !m)} aria-label="Menu">
           <span /><span /><span />
         </button>
 
@@ -48,15 +42,12 @@ export default function Navbar({ onSearch }) {
           <li><Link to="/bangla-movies" className={navClass("/bangla-movies")}>Bangla</Link></li>
         </ul>
 
-        <div className="navbar-search">
-          <span className="search-icon">&#128269;</span>
-          <input
-            type="text"
-            placeholder="Search..."
-            value={query}
-            onChange={handleSearch}
-          />
-        </div>
+        <button className="navbar-search-btn" onClick={onOpenSearch} aria-label="Search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <span>Search</span>
+        </button>
       </div>
     </nav>
   );

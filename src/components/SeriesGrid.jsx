@@ -20,7 +20,6 @@ export default function SeriesGrid({ series, loading, genres, title, routePrefix
   const initSort  = searchParams.get("sort")  || "rating";
   const initGenre = searchParams.get("genre") || "All";
 
-  const [query,       setQuery]       = useState(searchParams.get("q") || "");
   const [activeGenre, setActiveGenre] = useState(initGenre);
   const [sort,        setSort]        = useState(initSort);
   const [page,        setPage]        = useState(1);
@@ -39,20 +38,10 @@ export default function SeriesGrid({ series, loading, genres, title, routePrefix
     setPage(1);
     updateParam("sort", s);
   }
-  function handleSearch(e) {
-    const v = e.target.value;
-    setQuery(v);
-    setPage(1);
-    updateParam("q", v);
-  }
 
   const filtered = useMemo(() => {
     let out = series;
     if (activeGenre !== "All") out = out.filter(s => s.genre?.some(g => g === activeGenre));
-    if (query.trim()) {
-      const q = query.toLowerCase();
-      out = out.filter(s => s.title.toLowerCase().includes(q));
-    }
     switch (sort) {
       case "rating": out = [...out].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0)); break;
       case "new":    out = [...out].sort((a, b) => b.year.localeCompare(a.year)); break;
@@ -60,7 +49,7 @@ export default function SeriesGrid({ series, loading, genres, title, routePrefix
       case "za":     out = [...out].sort((a, b) => b.title.localeCompare(a.title)); break;
     }
     return out;
-  }, [series, activeGenre, query, sort]);
+  }, [series, activeGenre, sort]);
 
   const pageCount = Math.ceil(filtered.length / PAGE_SIZE);
   const visible   = filtered.slice(0, page * PAGE_SIZE);
@@ -77,16 +66,6 @@ export default function SeriesGrid({ series, loading, genres, title, routePrefix
           <div>
             <div className="sg-eyebrow">Browse</div>
             <h1 className="sg-title">{title}</h1>
-          </div>
-          <div className="sg-search-wrap">
-            <span className="sg-search-icon">&#128269;</span>
-            <input
-              className="sg-search"
-              type="text"
-              placeholder="Search title…"
-              value={query}
-              onChange={handleSearch}
-            />
           </div>
         </div>
 
@@ -119,7 +98,7 @@ export default function SeriesGrid({ series, loading, genres, title, routePrefix
 
         <div className="sg-count">
           {loading ? "Loading…" : `${filtered.length.toLocaleString()} series`}
-          {(activeGenre !== "All" || query) && ` · filtered from ${series.length.toLocaleString()}`}
+          {activeGenre !== "All" && ` · filtered from ${series.length.toLocaleString()}`}
         </div>
       </div>
 
@@ -187,7 +166,7 @@ export default function SeriesGrid({ series, loading, genres, title, routePrefix
 
           {filtered.length === 0 && (
             <div className="sg-empty">
-              No series found for "{query || activeGenre}"
+              No series found for "{activeGenre}"
             </div>
           )}
 

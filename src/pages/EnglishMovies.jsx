@@ -19,7 +19,6 @@ export default function EnglishMovies() {
   const { movies, loading } = useEnglishMovies();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [query,        setQuery]        = useState(searchParams.get("q") || "");
   const [activeSource, setActiveSource] = useState(searchParams.get("source") || "All");
   const [sort,         setSort]         = useState(searchParams.get("sort") || "rating");
   const [page,         setPage]         = useState(1);
@@ -31,15 +30,10 @@ export default function EnglishMovies() {
 
   function handleSource(s) { setActiveSource(s); setPage(1); updateParam("source", s === "All" ? "" : s); }
   function handleSort(s)   { setSort(s);         setPage(1); updateParam("sort", s); }
-  function handleSearch(e) { const v = e.target.value; setQuery(v); setPage(1); updateParam("q", v); }
 
   const filtered = useMemo(() => {
     let out = movies;
     if (activeSource !== "All") out = out.filter(m => m.source === activeSource);
-    if (query.trim()) {
-      const q = query.toLowerCase();
-      out = out.filter(m => m.title.toLowerCase().includes(q));
-    }
     switch (sort) {
       case "rating": out = [...out].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0)); break;
       case "new":    out = [...out].sort((a, b) => (b.year || "").localeCompare(a.year || "")); break;
@@ -47,7 +41,7 @@ export default function EnglishMovies() {
       case "za":     out = [...out].sort((a, b) => b.title.localeCompare(a.title)); break;
     }
     return out;
-  }, [movies, activeSource, query, sort]);
+  }, [movies, activeSource, sort]);
 
   const visible = filtered.slice(0, page * PAGE_SIZE);
   const hasMore = page < Math.ceil(filtered.length / PAGE_SIZE);
@@ -72,10 +66,6 @@ export default function EnglishMovies() {
             <div className="sg-eyebrow">Browse</div>
             <h1 className="sg-title">English Movies</h1>
           </div>
-          <div className="sg-search-wrap">
-            <span className="sg-search-icon">&#128269;</span>
-            <input className="sg-search" type="text" placeholder="Search title…" value={query} onChange={handleSearch} />
-          </div>
         </div>
 
         <div className="sg-controls">
@@ -97,7 +87,7 @@ export default function EnglishMovies() {
 
         <div className="sg-count">
           {loading ? "Loading…" : `${filtered.length.toLocaleString()} movies`}
-          {(activeSource !== "All" || query) && ` · filtered from ${movies.length.toLocaleString()}`}
+          {activeSource !== "All" && ` · filtered from ${movies.length.toLocaleString()}`}
         </div>
       </div>
 
@@ -130,7 +120,7 @@ export default function EnglishMovies() {
           </div>
 
           {filtered.length === 0 && (
-            <div className="sg-empty">No movies found{query ? ` for "${query}"` : ""}</div>
+            <div className="sg-empty">No movies found</div>
           )}
 
           {hasMore && (

@@ -3,15 +3,18 @@ import { useWatchlist } from "../hooks/useWatchlist";
 import "./BottomNav.css";
 
 const TABS = [
-  { label: "Home",   icon: "🏠", to: "/",          exact: true  },
-  { label: "Korean", icon: "🎭", to: "/korean",     exact: false },
-  { label: "TV",     icon: "📺", to: "/tvseries",   exact: false },
-  { label: "Movies", icon: "🎬", to: "/english-movies", exact: false },
-  { label: "Search", icon: "🔍", to: "/search",     exact: false },
+  { label: "Home",   icon: "🏠", to: "/",               exact: true  },
+  { label: "Korean", icon: "🎭", to: "/korean",          exact: false },
+  { label: "TV",     icon: "📺", to: "/tvseries",        exact: false },
+  { label: "Movies", icon: "🎬", to: "/english-movies",  exact: false },
 ];
 
 export default function BottomNav() {
   const { list } = useWatchlist();
+
+  function openSearch() {
+    window.dispatchEvent(new CustomEvent("dhakaflix_open_search"));
+  }
 
   return (
     <nav className="bottom-nav" aria-label="Mobile navigation">
@@ -26,6 +29,11 @@ export default function BottomNav() {
           <span className="bottom-nav-label">{tab.label}</span>
         </NavLink>
       ))}
+
+      <button className="bottom-nav-tab" onClick={openSearch}>
+        <span className="bottom-nav-icon">🔍</span>
+        <span className="bottom-nav-label">Search</span>
+      </button>
       <NavLink
         to="/watchlist"
         className={({ isActive }) => "bottom-nav-tab" + (isActive ? " bottom-nav-active" : "")}

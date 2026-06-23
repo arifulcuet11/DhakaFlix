@@ -16,20 +16,14 @@ const PAGE_SIZE = 60;
 export default function BanglaMovies() {
   const { movies, loading } = useBanglaMovies();
 
-  const [query,   setQuery]   = useState("");
   const [sort,    setSort]    = useState("rating");
   const [page,    setPage]    = useState(1);
   const [playing, setPlaying] = useState(null);
 
   function handleSort(s)   { setSort(s);  setPage(1); }
-  function handleSearch(e) { setQuery(e.target.value); setPage(1); }
 
   const filtered = useMemo(() => {
     let out = movies;
-    if (query.trim()) {
-      const q = query.toLowerCase();
-      out = out.filter(m => m.title.toLowerCase().includes(q));
-    }
     switch (sort) {
       case "rating": out = [...out].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0)); break;
       case "new":    out = [...out].sort((a, b) => (b.year || "").localeCompare(a.year || "")); break;
@@ -37,7 +31,7 @@ export default function BanglaMovies() {
       case "za":     out = [...out].sort((a, b) => b.title.localeCompare(a.title)); break;
     }
     return out;
-  }, [movies, query, sort]);
+  }, [movies, sort]);
 
   const visible = filtered.slice(0, page * PAGE_SIZE);
   const hasMore = page < Math.ceil(filtered.length / PAGE_SIZE);
@@ -62,10 +56,6 @@ export default function BanglaMovies() {
             <div className="sg-eyebrow">Browse</div>
             <h1 className="sg-title">Kolkata Bangla Movies</h1>
           </div>
-          <div className="sg-search-wrap">
-            <span className="sg-search-icon">&#128269;</span>
-            <input className="sg-search" type="text" placeholder="Search title…" value={query} onChange={handleSearch} />
-          </div>
         </div>
 
         <div className="sg-controls">
@@ -80,7 +70,6 @@ export default function BanglaMovies() {
 
         <div className="sg-count">
           {loading ? "Loading…" : `${filtered.length.toLocaleString()} movies`}
-          {query && ` · filtered from ${movies.length.toLocaleString()}`}
         </div>
       </div>
 
@@ -112,7 +101,7 @@ export default function BanglaMovies() {
           </div>
 
           {filtered.length === 0 && (
-            <div className="sg-empty">No movies found{query ? ` for "${query}"` : ""}</div>
+            <div className="sg-empty">No movies found</div>
           )}
 
           {hasMore && (

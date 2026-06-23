@@ -1,12 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import BottomNav from "./components/BottomNav";
 import PageTransition from "./components/PageTransition";
+import SearchOverlay from "./components/SearchOverlay";
 import Home from "./pages/Home";
 import CategoryPage from "./pages/CategoryPage";
-import Search from "./pages/Search";
 import SeriesDetail from "./pages/SeriesDetail";
 import EnglishTV from "./pages/EnglishTV";
 import KoreanTV from "./pages/KoreanTV";
@@ -19,16 +19,22 @@ import BanglaMovies from "./pages/BanglaMovies";
 import Watchlist from "./pages/Watchlist";
 
 export default function App() {
-  const [query, setQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  useEffect(() => {
+    function onOpen() { setSearchOpen(true); }
+    window.addEventListener("dhakaflix_open_search", onOpen);
+    return () => window.removeEventListener("dhakaflix_open_search", onOpen);
+  }, []);
 
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
-      <Navbar onSearch={setQuery} />
+      <Navbar onOpenSearch={() => setSearchOpen(true)} />
+      {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
       <PageTransition>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/:slug" element={<CategoryPage />} />
-        <Route path="/search" element={<Search query={query} />} />
         <Route path="/series/:id" element={<SeriesDetail source="korean" />} />
         <Route path="/tv/:id" element={<SeriesDetail source="english" />} />
         <Route path="/tvseries" element={<EnglishTV />} />
